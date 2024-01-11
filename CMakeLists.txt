@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(swarm)
+project(px4_swarm_controller)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -32,10 +32,10 @@ if(BUILD_TESTING)
 endif()
 
 # Install Py Packages
-ament_python_install_packages(${PROJECT_NAME})
+ament_python_install_package(${PROJECT_NAME})
 
 # Install Py executables
-install(PROGRAMS simulation_node.py DESTINATION lib/${PROJECT_NAME}
+install(PROGRAMS ${PROJECT_NAME}/simulation_node.py DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY launch
   DESTINATION share/${PROJECT_NAME})
