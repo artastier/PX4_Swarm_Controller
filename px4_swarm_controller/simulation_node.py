@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+__author__ = 'Arthur Astier'
+
 # Import the subprocess and time modules
 import rclpy
 from rclpy.node import Node
@@ -19,7 +21,8 @@ class SimulationScript(Node):
         self.declare_parameter('initial_pose', '')
         (n, m, w, s, t, l, p) = self.get_parameters(
             ['nb_vehicles', 'drone_model', 'world', 'script', 'target', 'label', 'initial_pose'])
-        query_arguments = {' -n ': n.value, ' -m ': m.value, ' -w ': w.value, ' -s ': s.value, ' -t ': t.value, ' -l ': l.value,
+        query_arguments = {' -n ': n.value, ' -m ': m.value, ' -w ': w.value, ' -s ': s.value, ' -t ': t.value,
+                           ' -l ': l.value,
                            ' -p ': p.value}
         query = ""
         for key, value in query_arguments.items():

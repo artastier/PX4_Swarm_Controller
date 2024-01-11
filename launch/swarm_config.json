@@ -1,0 +1,22 @@
+{
+  "1": {
+    "model": "iris",
+    "initial_pose": {"x":  0.0, "y": 1.0},
+    "is_leader": true
+  },
+  "2": {
+    "model": "iris",
+    "initial_pose": {"x":  1.0, "y": 0.0},
+    "is_leader": false
+  },
+  "3": {
+    "model": "iris",
+    "initial_pose": {"x":  0.0, "y": -1.0},
+    "is_leader": false
+  },
+  "4": {
+    "model": "iris",
+    "initial_pose": {"x":  -1.0, "y": 0.0},
+    "is_leader": false
+  }
+}
