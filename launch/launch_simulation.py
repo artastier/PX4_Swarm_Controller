@@ -32,7 +32,7 @@ def generate_launch_description():
     initial_poses = initial_poses[:-1] + "\""
     # Extract all is_leader values
     is_leaders = [item["is_leader"] for item in swarm_config_data.values()]
-    
+
     return LaunchDescription([
         # Weird, the simulation_node.py Python script isn't really installed as an executable even if we installed it
         # through the CMakeLists.txt.
@@ -41,4 +41,29 @@ def generate_launch_description():
             executable='simulation_node.py',
             name='simulation_node',
             parameters=[{'script': script, 'initial_pose': initial_poses}]
-        )])
+        ),
+        Node(
+            package='px4_swarm_controller',
+            executable='leader_control',
+            name='leader_control',
+            namespace='px4_1'
+        ),
+        Node(
+            package='px4_swarm_controller',
+            executable='leader_control',
+            name='leader_control',
+            namespace='px4_2'
+        ),
+        Node(
+            package='px4_swarm_controller',
+            executable='leader_control',
+            name='leader_control',
+            namespace='px4_3'
+        ),
+        Node(
+            package='px4_swarm_controller',
+            executable='leader_control',
+            name='leader_control',
+            namespace='px4_4'
+        )
+    ])

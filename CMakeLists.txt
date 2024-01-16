@@ -10,14 +10,15 @@ find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
+find_package(px4_msgs REQUIRED)
 
 include_directories(include)
-#add_executable(talker src/publisher_member_function.cpp)
-#ament_target_dependencies(talker rclcpp std_msgs)
+add_executable(leader_control src/offboard_control.cpp)
+ament_target_dependencies(leader_control rclcpp px4_msgs)
 
-#install(TARGETS
-#  talker
-#  DESTINATION lib/${PROJECT_NAME})
+install(TARGETS
+  leader_control
+  DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
