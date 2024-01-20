@@ -13,7 +13,7 @@ def generate_launch_description():
     # Extract information from configuration files
 
     # Swarm information
-    with open(os.path.join(package_dir, 'launch', 'swarm_config.json'), 'r') as file:
+    with open(os.path.join(package_dir, 'config', 'swarm_config.json'), 'r') as file:
         swarm_config_data = json.load(file)
     # Extract unique models and their counts
     model_counts = {}
@@ -44,26 +44,16 @@ def generate_launch_description():
         ),
         Node(
             package='px4_swarm_controller',
-            executable='leader_control',
-            name='leader_control',
-            namespace='px4_1'
+            executable='waypoint',
+            name='waypoint',
+            namespace='px4_1',
+            parameters=[{"wp_path":os.path.join(package_dir,"config","waypoints.yaml")}]
         ),
         Node(
             package='px4_swarm_controller',
             executable='leader_control',
             name='leader_control',
-            namespace='px4_2'
-        ),
-        Node(
-            package='px4_swarm_controller',
-            executable='leader_control',
-            name='leader_control',
-            namespace='px4_3'
-        ),
-        Node(
-            package='px4_swarm_controller',
-            executable='leader_control',
-            name='leader_control',
-            namespace='px4_4'
+            namespace='px4_1',
+            parameters=[{"x_init":0.0, "y_init":1.0}]
         )
     ])

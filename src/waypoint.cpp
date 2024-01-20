@@ -22,9 +22,12 @@ public:
         trajectory_setpoint_publisher_ = this->create_publisher<TrajectorySetpoint>(
                 name_space + "/fmu/in/trajectory_setpoint",
                 10);
+        // See PX4 documentation on subscriber
+        rmw_qos_profile_t qos_profile = rmw_qos_profile_sensor_data;
+        auto qos = rclcpp::QoS(rclcpp::QoSInitialization(qos_profile.history, 10), qos_profile);
         pose_subscriber = this->create_subscription<VehicleLocalPosition>(
                 name_space + "/fmu/out/vehicle_local_position",
-                10, [this](const typename VehicleLocalPosition::SharedPtr msg) {
+                qos, [this](const typename VehicleLocalPosition::SharedPtr msg) {
                     pose_subscriber_callback(msg);
                 });
         const auto node{YAML::LoadFile(wp_path)};
@@ -51,7 +54,6 @@ private:
     }
 
     void pose_subscriber_callback(const VehicleLocalPosition::SharedPtr& pose) {
-
         double theta_d = coord(wp_idx, "yaw");
 
         double distance{std::hypot(pose->x - waypoint.position[0], pose->y - waypoint.position[1], pose->z - waypoint.position[2])};
