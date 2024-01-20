@@ -14,18 +14,15 @@ find_package(px4_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
-
-include_directories(include ${yaml-cpp_INCLUDE_DIRS})
+include_directories(include ${YAML_CPP_INCLUDE_DIRS})
 add_executable(leader_control src/offboard_control.cpp
 )
 ament_target_dependencies(leader_control rclcpp px4_msgs)
 
 add_executable(waypoint src/waypoint.cpp)
-ament_target_dependencies(waypoint rclcpp px4_msgs std_msgs yaml-cpp)
+ament_target_dependencies(waypoint rclcpp px4_msgs std_msgs)
+target_link_libraries(waypoint ${YAML_CPP_LIBRARIES})
 
-target_link_libraries(waypoint
-        ${yaml-cpp_LIBRARIES}
-)
 install(TARGETS
         leader_control waypoint
         DESTINATION lib/${PROJECT_NAME})
@@ -49,5 +46,8 @@ ament_python_install_package(${PROJECT_NAME})
 install(PROGRAMS ${PROJECT_NAME}/simulation_node.py DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY launch
+        DESTINATION share/${PROJECT_NAME})
+
+install(DIRECTORY config
         DESTINATION share/${PROJECT_NAME})
 ament_package()

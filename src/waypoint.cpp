@@ -13,18 +13,20 @@ public:
     ChangeWaypoint() : Node("waypoint") {
         // TODO: Set use_sim_time true
         const std::string name_space{this->get_namespace()};
+        this->declare_parameter<std::string>("wp_path");
+        const auto wp_path{this->get_parameter("wp_path").as_string()};
+
+//        const std::string name_space{"/px4_1"};
         offboard_control_mode_publisher_ = this->create_publisher<OffboardControlMode>(
                 name_space + "/fmu/in/offboard_control_mode", 10);
         trajectory_setpoint_publisher_ = this->create_publisher<TrajectorySetpoint>(
                 name_space + "/fmu/in/trajectory_setpoint",
                 10);
         pose_subscriber = this->create_subscription<VehicleLocalPosition>(
-                name_space + "/fmu/in/trajectory_setpoint",
+                name_space + "/fmu/out/vehicle_local_position",
                 10, [this](const typename VehicleLocalPosition::SharedPtr msg) {
                     pose_subscriber_callback(msg);
                 });
-
-        std::string wp_path = static_cast<std::string>(this->get_name()) + "/config/waypoints.yaml";
         const auto node{YAML::LoadFile(wp_path)};
         threshold = node["threshold"].as<double>();
         RCLCPP_INFO(this->get_logger(), "WP Threshold: %f", threshold);
@@ -63,7 +65,7 @@ private:
             }
             writeWP(wp_idx);
         }
-
+        publish_offboard_control_mode();
         trajectory_setpoint_publisher_->publish(waypoint);
     }
 
