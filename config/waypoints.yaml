@@ -1,12 +1,8 @@
 threshold: 0.1
 threshold_angle: 0.4
+# Coordinates are in the North east down frame x -> y and y -> x
 wp:
-    #- {x: 0, y: 5, z: -4, theta: -1.05}
-    #- {x: 1, y: 4, z: -4, theta: -0.6}
-    #- {x: 2, y: 3, z: -5, theta: 0}
-    #- {x: 3, y: 4, z: -4, theta: 0.6}
-    #- {x: 4, y: 5, z: -4, theta: -1}
-    - {x: 0, y: 0, z: -5, yaw: 0}
-    - {x: 4, y: 0, z: -1, yaw: 0}
-    - {x: 5, y: 0, z: -4, yaw: 0}
-    #- {x: 0, y: 0, z: 0, theta: 0}
+    /px4_1:
+          - { x: 0, y: 0, z: -5, yaw: 0 }
+          - { x: 4, y: 0, z: -1, yaw: 0 }
+          - { x: 5, y: 0, z: -4, yaw: 0 }

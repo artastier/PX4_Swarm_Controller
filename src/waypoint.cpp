@@ -14,7 +14,12 @@ public:
         // TODO: Set use_sim_time true
         const std::string name_space{this->get_namespace()};
         this->declare_parameter<std::string>("wp_path");
+        this->declare_parameter<double>("x_init");
+        this->declare_parameter<double>("y_init");
+
         const auto wp_path{this->get_parameter("wp_path").as_string()};
+        x_init = this->get_parameter("x_init").as_double();
+        y_init = this->get_parameter("y_init").as_double();
 
 //        const std::string name_space{"/px4_1"};
         offboard_control_mode_publisher_ = this->create_publisher<OffboardControlMode>(
@@ -35,7 +40,7 @@ public:
         RCLCPP_INFO(this->get_logger(), "WP Threshold: %f", threshold);
         threshold_angle = node["threshold_angle"].as<double>();
         RCLCPP_INFO(this->get_logger(), "WP Angle Threshold: %f", threshold_angle);
-        waypoints = node["wp"];
+        waypoints = node["wp"][name_space];
         RCLCPP_INFO(this->get_logger(), "Found %ld waypoints", std::size(waypoints));
         // Initialize the first waypoint
         writeWP(wp_idx);
@@ -78,8 +83,8 @@ private:
     void writeWP(const std::size_t idx) {
         // TODO: Check use_sim_time
         waypoint.timestamp = static_cast<uint64_t>(this->get_clock()->now().seconds());
-
-        waypoint.position = {static_cast<float>(coord(idx, "x")), static_cast<float>(coord(idx, "y")),
+        // North-East-Down frame (different from Gazebo)
+        waypoint.position = {static_cast<float>(coord(idx, "y") - y_init), static_cast<float>(coord(idx, "x") - x_init),
                              static_cast<float>(coord(idx, "z"))};
 
         waypoint.yaw = static_cast<float>(coord(idx, "yaw"));
@@ -98,6 +103,9 @@ private:
     YAML::Node waypoints;
     double threshold{};
     double threshold_angle{};
+
+    double x_init{};
+    double y_init{};
 
 
 };
