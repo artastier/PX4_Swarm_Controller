@@ -15,16 +15,15 @@ find_package(std_msgs REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
 include_directories(include ${YAML_CPP_INCLUDE_DIRS})
-add_executable(leader_control src/offboard_control.cpp
-)
-ament_target_dependencies(leader_control rclcpp px4_msgs)
+add_executable(arming src/arming_node.cpp)
+ament_target_dependencies(arming rclcpp px4_msgs)
 
 add_executable(waypoint src/waypoint.cpp)
 ament_target_dependencies(waypoint rclcpp px4_msgs std_msgs)
 target_link_libraries(waypoint ${YAML_CPP_LIBRARIES})
 
 install(TARGETS
-        leader_control waypoint
+        arming waypoint
         DESTINATION lib/${PROJECT_NAME})
 
 if (BUILD_TESTING)
