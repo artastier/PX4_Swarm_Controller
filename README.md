@@ -2,6 +2,10 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+The aim of this repository is to provide a scalable multi-drone simulation for easy testing of control laws on fleets of
+UAVs. The default controller is based on a leader-follower approach taken from the paper [Distributed leader-follower formation control for
+multiple quadrotors with weighted topology (Zhicheng Hou, Isabelle Fantoni)](https://hal.science/hal-01180491/document).
+
 ## Install
 
 ### ROS2
@@ -86,7 +90,7 @@ sudo ldconfig /usr/local/lib/
   source ~/ros2_ws/install/local_setup.bash
   ```
 
-Then you can run the simulation launching ```lauch_simulation.py```:
+Then you can run the simulation by launching ```lauch_simulation.py```:
 
 ```shell
 ros2 launch px4_swarm_controller launch_simulation.py
@@ -95,6 +99,11 @@ ros2 launch px4_swarm_controller launch_simulation.py
 ## Configuration
 
 ### Swarm configuration
+
+- **model**:
+  ```"iris" "plane" "standard_vtol" "rover" "r1_rover" "typhoon_h480"```
+- **initial_pose**: Initial coordinates in the North-East plane.
+- **is_leader**: Defines if the drone is a leader or a follower for the swarm controller.
 
 ```json
 {
@@ -133,4 +142,79 @@ ros2 launch px4_swarm_controller launch_simulation.py
 }
 ```
 
+### Waypoints configuration
+
+Waypoints are stored in the ```config/waypoints.yaml``` file.
+
+They should be express in the **North-East-Down** frame. The ```waypoint``` node loops over the waypoints given for one
+drone.
+
+This node is launched if and only if the ```is_leader``` variable is set to ```true``` in the **Swarm
+configuration file**. The key in the YAML file should correspond to the namespace of the drone you set
+the ```is_leader``` variable to ```true``` (See example below).
+
+You can also provide **2 thresholds**, the distance and the angle. When both the cartesian error and the angle error are
+below these thresholds, the ```waypoint``` node sends the next setpoint.
+
+```yaml
+threshold: 0.1
+threshold_angle: 0.4
+# Coordinates are in the North east down frame x -> y and y -> x
+wp:
+  /px4_1:
+    # Up and down
+    - { x: 0, y: 1, z: -5, yaw: 0 }
+    - { x: 0, y: 1, z: -1, yaw: 0 }
+  /px4_2:
+    # Up and down
+    - { x: 1, y: 0, z: -5, yaw: 0 }
+    - { x: 1, y: 0, z: -1, yaw: 0 }
+  /px4_3:
+    # Up and down
+    - { x: 0, y: -1, z: -5, yaw: 0 }
+    - { x: 0, y: -1, z: -1, yaw: 0 }
+  /px4_4:
+    # Up and down
+    - { x: -1, y: 0, z: -5, yaw: 0 }
+    - { x: -1, y: 0, z: -1, yaw: 0 }
+```
+
+### Controller configuration
+
+Coming soon
+
 ## Usage
+
+### Arming drones
+
+To be able to switch to offboard mode (i.e Sending setpoints using ROS2 topics) the drone needs to
+receive ```OffboardControlMode``` messages both <u>before</u> trying to <u>switch to offboard mode</u> and <u>arming</u>
+the drone.
+
+(See [ROS2 Offboard Control Example](https://docs.px4.io/main/en/ros/ros2_offboard_control.html#implementation))
+
+The ```arming``` node aims to switch to offboard mode and arm all the drones in the simulation. Once it's done it will
+shut down.
+
+Given the ```number of drones``` as a parameter and **assuming** all the namespaces are standardized
+with ```/px4_<instance_id>```, you can launch this node by adding the following code in your launch description:
+
+```python
+from launch_ros.actions import Node
+
+Node(
+    package='px4_swarm_controller',
+    executable='arming',
+    name='arming',
+    namespace='simulation',
+    parameters=[{"nb_drones": nb_drones}]
+)
+```
+
+### Launching the simulation
+
+You can run the simulation by launching ```lauch_simulation.py```:
+
+```shell
+ros2 launch px4_swarm_controller launch_simulation.py
+```
