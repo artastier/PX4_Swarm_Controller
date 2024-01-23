@@ -81,8 +81,8 @@ def generate_launch_description():
         ),
         Node(
             package='px4_swarm_controller',
-            executable='leader_control',
-            name='leader_control',
+            executable='arming',
+            name='arming',
             namespace='simulation',
             parameters=[{"nb_drones":nb_drones}]
         )

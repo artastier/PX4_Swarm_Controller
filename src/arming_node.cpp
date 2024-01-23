@@ -14,16 +14,14 @@
 using namespace std::chrono;
 using namespace std::chrono_literals;
 
-// TODO: Try to create a class such as waypoint or the embedded control node can derive from
 class Arming : public rclcpp::Node {
     using ArmCheckClient = rclcpp::Client<px4_msgs::srv::VehicleCommand>::SharedPtr;
     using VehicleCommand = px4_msgs::msg::VehicleCommand;
 public:
     Arming() : Node("arming") {
 
-//        this->declare_parameter<int>("nb_drones");
-//        nb_drones = static_cast<std::size_t>(this->get_parameter("nb_drones").as_int());
-        nb_drones = 4u;
+        this->declare_parameter<int>("nb_drones");
+        nb_drones = static_cast<std::size_t>(this->get_parameter("nb_drones").as_int());
         // Initializing the vectors
         arm_check_clients_.reserve(nb_drones);
         is_armed.reserve(nb_drones);
@@ -39,9 +37,9 @@ public:
                     service, qos_profile));
             // Wait for the service to become available
             if (!arm_check_clients_[i]->wait_for_service(std::chrono::seconds(5))) {
-                RCLCPP_ERROR(this->get_logger(), "Service for drone n°%u not available", i);
+                RCLCPP_ERROR(this->get_logger(), "Service for drone n°%u not available", i+1);
             }
-            RCLCPP_ERROR(this->get_logger(), "Vehicle command service for drone n°%u available", i);
+            RCLCPP_ERROR(this->get_logger(), "Vehicle command service for drone n°%u available", i+1);
         }
         auto timer_callback = [this]() {
 
@@ -68,8 +66,6 @@ public:
 
         };
         timer_ptr_ = this->create_wall_timer(1s, timer_callback);
-        // TODO: Check how to set sim_time to true
-
 
     }
 
@@ -77,7 +73,9 @@ public:
 
     void offboard_mode(std::size_t drone_idx);
 
-    void disarm();
+private:
+
+    void request_vehicle_command(uint16_t command, std::size_t drone_idx, float param1 = 0.0, float param2 = 0.0);
 
 private:
     std::vector<ArmCheckClient> arm_check_clients_;
@@ -85,9 +83,6 @@ private:
     std::vector<bool> is_offboard;
     rclcpp::TimerBase::SharedPtr timer_ptr_;
     std::size_t nb_drones;
-
-
-    void request_vehicle_command(uint16_t command, std::size_t drone_idx, float param1 = 0.0, float param2 = 0.0);
 };
 
 /**
@@ -95,11 +90,6 @@ private:
  */
 void Arming::arm(std::size_t drone_idx) {
    request_vehicle_command(VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM, drone_idx, 1.0);
-    if (is_armed[drone_idx]) {
-        RCLCPP_INFO(this->get_logger(), "Drone n°%zu armed !", drone_idx);
-    } else {
-        RCLCPP_INFO(this->get_logger(), "Didn't succeed to arm the drone n°%zu", drone_idx);
-    }
 }
 
 /**
@@ -107,20 +97,6 @@ void Arming::arm(std::size_t drone_idx) {
  */
 void Arming::offboard_mode(std::size_t drone_idx) {
     request_vehicle_command(VehicleCommand::VEHICLE_CMD_DO_SET_MODE, drone_idx, 1, 6);
-    if (is_offboard[drone_idx]) {
-        RCLCPP_INFO(this->get_logger(), "Drone n°%zu is in offboard mode !", drone_idx);
-    } else {
-        RCLCPP_INFO(this->get_logger(), "Didn't succeed to switch drone n°%zu to offboard mode", drone_idx);
-    }
-}
-
-/**
- * @brief Send a command to Disarm the vehicle
- */
-void Arming::disarm() {
-    request_vehicle_command(VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM, 0.0);
-
-    RCLCPP_INFO(this->get_logger(), "Disarm command send");
 }
 
 /**
@@ -141,22 +117,24 @@ void Arming::request_vehicle_command(uint16_t command, std::size_t drone_idx, fl
 
     // Calculate timestamp
     request->request.timestamp = this->get_clock()->now().nanoseconds() / 1000;
-    RCLCPP_INFO(this->get_logger(), "Request sent:");
     // Send the request
+
     auto result_future{arm_check_clients_[drone_idx]->async_send_request(request,
                                                                          [this, drone_idx](const rclcpp::Client<px4_msgs::srv::VehicleCommand>::SharedFuture future) {
                                                                              auto& response{future.get()};
                                                                              // Handle the response
                                                                              const uint8_t result{response->reply.result};
                                                                              const uint32_t command{response->reply.command};
-                                                                             RCLCPP_INFO(this->get_logger(), "Vehicle Command Service connexion succeeded with result: %d",
-                                                                                         result);
+                                                                             // RCLCPP_INFO(this->get_logger(), "Vehicle Command Service connexion succeeded with result: %d",
+                                                                             //            result);
                                                                              if (!result) {
                                                                                  if (command==VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM){
                                                                                      is_armed[drone_idx] = true;
+                                                                                     RCLCPP_INFO(this->get_logger(), "Drone n°%zu is armed !", drone_idx+1);
                                                                                  }
                                                                                  else if(command==VehicleCommand::VEHICLE_CMD_DO_SET_MODE){
                                                                                      is_offboard[drone_idx] = true;
+                                                                                     RCLCPP_INFO(this->get_logger(), "Drone n°%zu is in offboard mode !", drone_idx+1);
                                                                                  }
                                                                              }
                                                                          })};
@@ -167,7 +145,6 @@ void Arming::request_vehicle_command(uint16_t command, std::size_t drone_idx, fl
 
 int main(int argc, char *argv[]) {
     std::cout << "Starting arming drones..." << std::endl;
-    setvbuf(stdout, NULL, _IONBF, BUFSIZ);
     rclcpp::init(argc, argv);
     rclcpp::spin(std::make_shared<Arming>());
     rclcpp::shutdown();
