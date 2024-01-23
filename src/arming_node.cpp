@@ -23,47 +23,47 @@ public:
 
 //        this->declare_parameter<int>("nb_drones");
 //        nb_drones = static_cast<std::size_t>(this->get_parameter("nb_drones").as_int());
-         nb_drones=4u;
+        nb_drones = 4u;
         // Initializing the vectors
         arm_check_clients_.reserve(nb_drones);
         is_armed.reserve(nb_drones);
-        is_armed.assign(nb_drones,false);
+        is_armed.assign(nb_drones, false);
         is_offboard.reserve(nb_drones);
-        is_offboard.assign(nb_drones,false);
+        is_offboard.assign(nb_drones, false);
 
         rmw_qos_profile_t qos_profile = rmw_qos_profile_default;
         // Instantiating all the clients and check their availability
         for (auto i{0u}; i < nb_drones; ++i) {
             auto service{"/px4_" + std::to_string(i + 1) + "/fmu/vehicle_command"};
             arm_check_clients_.emplace_back(this->create_client<px4_msgs::srv::VehicleCommand>(
-                    service,qos_profile));
+                    service, qos_profile));
             // Wait for the service to become available
             if (!arm_check_clients_[i]->wait_for_service(std::chrono::seconds(5))) {
-                RCLCPP_ERROR(this->get_logger(), "Service for drone n°%u not available",i);
+                RCLCPP_ERROR(this->get_logger(), "Service for drone n°%u not available", i);
             }
             RCLCPP_ERROR(this->get_logger(), "Vehicle command service for drone n°%u available", i);
         }
         auto timer_callback = [this]() {
 
-            for (auto i{0u}; i < nb_drones; ++i) {
-                if (!is_offboard[i]){
-                    // Set to onboard_mode
-                    offboard_mode(i);
-                }
-                if (!is_armed[i]){
-                    // Set to onboard_mode
-                    arm(i);
-                }
-
-            }
             bool allArmed = std::all_of(is_armed.begin(), is_armed.end(), [](bool value) {
                 return value;
             });
             bool allOffBoard = std::all_of(is_offboard.begin(), is_offboard.end(), [](bool value) {
                 return value;
             });
-            if (allArmed&&allOffBoard){
+            if (allArmed && allOffBoard) {
                 rclcpp::shutdown();
+            }
+            for (auto i{0u}; i < nb_drones; ++i) {
+                if (!is_offboard[i]) {
+                    // Set to onboard_mode
+                    offboard_mode(i);
+                }
+                if (!is_armed[i]) {
+                    // Set to onboard_mode
+                    arm(i);
+                }
+
             }
 
         };
@@ -87,18 +87,18 @@ private:
     std::size_t nb_drones;
 
 
-    bool request_vehicle_command(uint16_t command, std::size_t drone_idx, float param1 = 0.0, float param2 = 0.0);
+    void request_vehicle_command(uint16_t command, std::size_t drone_idx, float param1 = 0.0, float param2 = 0.0);
 };
 
 /**
  * @brief Send a command to Arm the vehicle
  */
 void Arming::arm(std::size_t drone_idx) {
-    is_armed[drone_idx] = request_vehicle_command(VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM, drone_idx, 1.0);
+   request_vehicle_command(VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM, drone_idx, 1.0);
     if (is_armed[drone_idx]) {
-        RCLCPP_INFO(this->get_logger(), "Drone %zu armed !",drone_idx);
+        RCLCPP_INFO(this->get_logger(), "Drone n°%zu armed !", drone_idx);
     } else {
-        RCLCPP_INFO(this->get_logger(), "Didn't succeed to arm the drone %zu", drone_idx);
+        RCLCPP_INFO(this->get_logger(), "Didn't succeed to arm the drone n°%zu", drone_idx);
     }
 }
 
@@ -106,9 +106,9 @@ void Arming::arm(std::size_t drone_idx) {
  * @brief Send a command to switch in OffBoard Mode
  */
 void Arming::offboard_mode(std::size_t drone_idx) {
-    is_offboard[drone_idx] = request_vehicle_command(VehicleCommand::VEHICLE_CMD_DO_SET_MODE, drone_idx, 1, 6);
+    request_vehicle_command(VehicleCommand::VEHICLE_CMD_DO_SET_MODE, drone_idx, 1, 6);
     if (is_offboard[drone_idx]) {
-        RCLCPP_INFO(this->get_logger(), "Drone %zu is in offboard mode !", drone_idx);
+        RCLCPP_INFO(this->get_logger(), "Drone n°%zu is in offboard mode !", drone_idx);
     } else {
         RCLCPP_INFO(this->get_logger(), "Didn't succeed to switch drone n°%zu to offboard mode", drone_idx);
     }
@@ -126,8 +126,7 @@ void Arming::disarm() {
 /**
  * @brief Request the vehicle command service (Arming, switch to offboard mode...)
  */
-bool Arming::request_vehicle_command(uint16_t command, std::size_t drone_idx, float param1, float param2) {
-    bool request_success{false};
+void Arming::request_vehicle_command(uint16_t command, std::size_t drone_idx, float param1, float param2) {
 
     auto request{std::make_shared<px4_msgs::srv::VehicleCommand::Request>()};
     request->request.set__command(command);
@@ -144,27 +143,26 @@ bool Arming::request_vehicle_command(uint16_t command, std::size_t drone_idx, fl
     request->request.timestamp = this->get_clock()->now().nanoseconds() / 1000;
     RCLCPP_INFO(this->get_logger(), "Request sent:");
     // Send the request
-    auto result_future{arm_check_clients_[drone_idx]->async_send_request(request)};
+    auto result_future{arm_check_clients_[drone_idx]->async_send_request(request,
+                                                                         [this, drone_idx](const rclcpp::Client<px4_msgs::srv::VehicleCommand>::SharedFuture future) {
+                                                                             auto& response{future.get()};
+                                                                             // Handle the response
+                                                                             const uint8_t result{response->reply.result};
+                                                                             const uint32_t command{response->reply.command};
+                                                                             RCLCPP_INFO(this->get_logger(), "Vehicle Command Service connexion succeeded with result: %d",
+                                                                                         result);
+                                                                             if (!result) {
+                                                                                 if (command==VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM){
+                                                                                     is_armed[drone_idx] = true;
+                                                                                 }
+                                                                                 else if(command==VehicleCommand::VEHICLE_CMD_DO_SET_MODE){
+                                                                                     is_offboard[drone_idx] = true;
+                                                                                 }
+                                                                             }
+                                                                         })};
 
     // Wait for the response without creating deadlock
-    // TODO: Solve problem of always having a timeout when waiting for the services's reply
-    std::future_status status = result_future.wait_for(100ms);  // timeout to guarantee a graceful finish
-    if (status == std::future_status::ready) {
-        auto response{result_future.get()};
-        // Handle the response
-        auto result{response->reply.result};
-        RCLCPP_INFO(this->get_logger(), "Vehicle Command Service connexion succeeded with result: %d",
-                    result);
-        if (!result) {
-            RCLCPP_INFO(this->get_logger(), "Command succeeded on attempt n°");
-            request_success = true;
-        } else {
-            RCLCPP_INFO(this->get_logger(), "Command failed on attempt n°");
-        }
-    } else {
-        RCLCPP_ERROR(this->get_logger(), "Vehicle Command Service call failed");
-    }
-    return request_success;
+    result_future.wait_for(100ms);  // timeout to guarantee a graceful finish
 }
 
 int main(int argc, char *argv[]) {
