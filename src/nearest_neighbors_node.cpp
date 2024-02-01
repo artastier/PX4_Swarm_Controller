@@ -12,7 +12,7 @@ class NearestNeighbors : public rclcpp::Node {
     using VehicleLocalPosition = px4_msgs::msg::VehicleLocalPosition;
     using PositionSubscriberSharedPtr = rclcpp::Subscription<VehicleLocalPosition>::SharedPtr;
     using Neighbors = custom_msgs::msg::Neighbors;
-    using NeighborsPubliserSharedPtr = rclcpp::Publisher<Neighbors>::SharedPtr;
+    using NeighborsPublisherSharedPtr = rclcpp::Publisher<Neighbors>::SharedPtr;
 public:
     /**
      * @brief
@@ -37,10 +37,10 @@ private:
 
 private:
     std::vector<PositionSubscriberSharedPtr> position_subscribers;
-    std::vector<NeighborsPubliserSharedPtr> neighbors_publishers;
+    std::vector<NeighborsPublisherSharedPtr> neighbors_publishers;
     rclcpp::TimerBase::SharedPtr timer;
     // Parameters
-    std::vector<bool> is_leader;
+    std::vector<bool> leaders;
     std::vector<bool> position_received;
     std::vector<VehicleLocalPosition> drones_positions;
     double neighbor_distance{};
@@ -53,28 +53,33 @@ NearestNeighbors::NearestNeighbors() : Node("nearest_neighbors") {
 
     // Definition of the parameters required for a leader-follower control (i.e you can remove the "is_leader"
     // parameter if neeeded)
-    this->declare_parameter<int>("nb_drones");
-    this->declare_parameter<double>("neighbor_distance");
-    this->declare_parameter<std::vector<bool>>("is_leader");
+    // this->declare_parameter<int>("nb_drones");
+    // this->declare_parameter<double>("neighbor_distance");
+    // this->declare_parameter<std::vector<bool>>("leaders");
 
-    nb_drones = static_cast<std::size_t>(this->get_parameter("nb_drones").as_int());
-    neighbor_distance = this->get_parameter("neighbor_distance").as_double();
+    // nb_drones = static_cast<std::size_t>(this->get_parameter("nb_drones").as_int());
+    // neighbor_distance = this->get_parameter("neighbor_distance").as_double();
     // TODO: Check if it works
-    is_leader = this->get_parameter("is_leader").as_bool_array();
-
+    // leaders = this->get_parameter("leaders").as_bool_array();
+    nb_drones = 2;
+    neighbor_distance = 2.0;
+    leaders = {true, false};
     // Definition of the publishers and the subscribers
     position_subscribers.reserve(nb_drones);
     neighbors_publishers.reserve(nb_drones);
+    rmw_qos_profile_t qos_profile = rmw_qos_profile_sensor_data;
+    auto qos = rclcpp::QoS(rclcpp::QoSInitialization(qos_profile.history, 10), qos_profile);
     for (auto i{0u}; i < nb_drones; ++i) {
         auto subscriber_topic{"/px4_" + std::to_string(i + 1) + "/fmu/out/vehicle_local_position"};
-        position_subscribers.emplace_back(this->create_subscription<VehicleLocalPosition>(subscriber_topic, 10,
+        position_subscribers.emplace_back(this->create_subscription<VehicleLocalPosition>(subscriber_topic, qos,
                                                                                           [this, i](
                                                                                                   const VehicleLocalPosition::SharedPtr msg) {
                                                                                               pose_subscriber_callback(
                                                                                                       msg, i);
                                                                                           }));
         auto publisher_topic{"/px4_" + std::to_string(i + 1) + "/fmu/out/nearest_neighbors"};
-        neighbors_publishers.emplace_back(this->create_publisher<Neighbors>(publisher_topic, 10));
+        // TODO: Understand why using these publishers doesn't work
+        // neighbors_publishers.emplace_back(this->create_publisher<Neighbors>(publisher_topic, 10));
     }
 
     position_received.reserve(nb_drones);
@@ -124,20 +129,28 @@ void NearestNeighbors::find_neighbors() {
                       std::vector<bool> neighbors_leaders;
                       std::copy_if(std::begin(this->drones_positions), std::end(this->drones_positions),
                                    std::back_inserter(neighbors_positions),
-                                   [this, neighbors_leaders, position, drone_idx = 0u](
+                                   [this, &neighbors_leaders, position, drone_idx, neighbor_idx = 0u](
                                            const auto &neighbor_position) mutable {
                                        bool is_neighbor{
                                                NearestNeighbors::is_neighbor(position, neighbor_position,
                                                                              this->neighbor_distance)};
-                                       if (is_neighbor)
-                                           neighbors_leaders.emplace_back(this->is_leader[drone_idx]);
+                                       if (is_neighbor) {
+                                           const bool is_a_leader{this->leaders[neighbor_idx]};
+                                           neighbors_leaders.emplace_back(is_a_leader);
+                                           RCLCPP_INFO(this->get_logger(),
+                                                       "Drone n°%u is the neighbor of drone n°%u and its leadership is %u",
+                                                       neighbor_idx, drone_idx,
+                                                       is_a_leader);
+                                       }
                                        ++drone_idx;
                                        return is_neighbor;
                                    });
-                      const Neighbors::SharedPtr nearest_neighbors{};
-                      nearest_neighbors->set__neighbors_leaders(neighbors_leaders);
-                      nearest_neighbors->set__neighbors_position(neighbors_positions);
-                      this->neighbors_publishers[drone_idx]->publish(*nearest_neighbors);
+                      Neighbors nearest_neighbors;
+                      if ((!std::empty(neighbors_leaders)) && (!std::empty(neighbors_positions))) {
+                          nearest_neighbors.set__neighbors_leaders(neighbors_leaders);
+                          nearest_neighbors.set__neighbors_position(neighbors_positions);
+                          // this->neighbors_publishers[drone_idx]->publish(*nearest_neighbors);
+                      }
                       ++drone_idx;
 
                   });
