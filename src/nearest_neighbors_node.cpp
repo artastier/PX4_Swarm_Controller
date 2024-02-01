@@ -3,7 +3,10 @@
 */
 #include <rclcpp/rclcpp.hpp>
 #include <px4_msgs/msg/vehicle_local_position.hpp>
+#include <chrono>
 #include <custom_msgs/msg/neighbors.hpp>
+
+using namespace std::chrono_literals;
 
 class NearestNeighbors : public rclcpp::Node {
     using VehicleLocalPosition = px4_msgs::msg::VehicleLocalPosition;
@@ -18,18 +21,28 @@ public:
 
 private:
     /**
-    * @brief Callback function for the vehicle local position subscriber.
-    * @param pose The received vehicle local position message.
+    * @brief
     */
     void pose_subscriber_callback(const VehicleLocalPosition::SharedPtr &pose, const std::size_t drone_idx);
+
+    /**
+     * @brief
+     */
+    void find_neighbors();
+
+    /**
+     * @brief
+     */
+    static bool is_neighbor(const VehicleLocalPosition &lhs, const VehicleLocalPosition &rhs, const double distance);
 
 private:
     std::vector<PositionSubscriberSharedPtr> position_subscribers;
     std::vector<NeighborsPubliserSharedPtr> neighbors_publishers;
+    rclcpp::TimerBase::SharedPtr timer;
     // Parameters
     std::vector<bool> is_leader;
-    std::vector<bool> all_position_received;
-    std::vector<bool> drones_positions;
+    std::vector<bool> position_received;
+    std::vector<VehicleLocalPosition> drones_positions;
     double neighbor_distance{};
     std::size_t nb_drones{};
 
@@ -64,8 +77,29 @@ NearestNeighbors::NearestNeighbors() : Node("nearest_neighbors") {
         neighbors_publishers.emplace_back(this->create_publisher<Neighbors>(publisher_topic, 10));
     }
 
-    all_position_received.reserve(nb_drones);
+    position_received.reserve(nb_drones);
+    position_received.assign(nb_drones, false);
     drones_positions.reserve(nb_drones);
+    drones_positions.assign(nb_drones, VehicleLocalPosition{});
+
+    auto timer_callback = [this]() {
+        bool all_position_received = std::all_of(position_received.begin(), position_received.end(), [](bool value) {
+            return value;
+        });
+
+        // Shutdown if all drones are armed and in offboard mode
+        if (all_position_received) {
+            std::transform(position_received.cbegin(), position_received.cend(),
+                           position_received.begin(), // write to the same location
+                           [](const bool is_received) { return false; });
+
+            find_neighbors();
+        }
+
+    };
+
+    // Create a timer to periodically check and arm the drones
+    timer = this->create_wall_timer(1s, timer_callback);
 
 };
 
@@ -75,10 +109,45 @@ NearestNeighbors::NearestNeighbors() : Node("nearest_neighbors") {
  */
 void
 NearestNeighbors::pose_subscriber_callback(const VehicleLocalPosition::SharedPtr &pose, const std::size_t drone_idx) {
+    position_received[drone_idx] = true;
+    drones_positions[drone_idx] = *pose;
+}
 
-    double distance{std::hypot(pose->x, pose->y,
-                               pose->z)};
+/**
+ * @brief
+ */
+void NearestNeighbors::find_neighbors() {
+    // TODO: Try to optimize the search by using branch and bound or take into account the reciprocity of being neighbors
+    std::for_each(std::begin(drones_positions), std::end(drones_positions),
+                  [this, drone_idx = 0u](const auto &position)mutable {
+                      std::vector<VehicleLocalPosition> neighbors_positions;
+                      std::vector<bool> neighbors_leaders;
+                      std::copy_if(std::begin(this->drones_positions), std::end(this->drones_positions),
+                                   std::back_inserter(neighbors_positions),
+                                   [this, neighbors_leaders, position, drone_idx = 0u](
+                                           const auto &neighbor_position) mutable {
+                                       bool is_neighbor{
+                                               NearestNeighbors::is_neighbor(position, neighbor_position,
+                                                                             this->neighbor_distance)};
+                                       if (is_neighbor)
+                                           neighbors_leaders.emplace_back(this->is_leader[drone_idx]);
+                                       ++drone_idx;
+                                       return is_neighbor;
+                                   });
+                      const Neighbors::SharedPtr nearest_neighbors{};
+                      nearest_neighbors->set__neighbors_leaders(neighbors_leaders);
+                      nearest_neighbors->set__neighbors_position(neighbors_positions);
+                      this->neighbors_publishers[drone_idx]->publish(*nearest_neighbors);
+                      ++drone_idx;
 
+                  });
+}
+
+bool
+NearestNeighbors::is_neighbor(const VehicleLocalPosition &lhs, const VehicleLocalPosition &rhs, const double distance) {
+    const auto drone_distance{std::hypot(lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z)};
+    // The search of neighbors is not really well done yet so you can have the same position in lhs and rhs.
+    return ((drone_distance <= distance) && (drone_distance != 0));
 }
 
 int main(int argc, char *argv[]) {
