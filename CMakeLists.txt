@@ -13,8 +13,10 @@ find_package(rclpy REQUIRED)
 find_package(px4_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(yaml-cpp REQUIRED)
+# I didn't build the message in this package becaus it seems to create issues with ament python
+find_package(custom_msgs REQUIRED)
 
-include_directories(include ${YAML_CPP_INCLUDE_DIRS})
+include_directories(include ${YAML_CPP_INCLUDE_DIRS} ${px4_msgs_INCLUDE_DIRS})
 add_executable(arming src/arming_node.cpp)
 ament_target_dependencies(arming rclcpp px4_msgs)
 
@@ -22,8 +24,11 @@ add_executable(waypoint src/waypoint.cpp)
 ament_target_dependencies(waypoint rclcpp px4_msgs std_msgs)
 target_link_libraries(waypoint ${YAML_CPP_LIBRARIES})
 
+add_executable(nearest_neighbors src/nearest_neighbors_node.cpp)
+ament_target_dependencies(nearest_neighbors rclcpp px4_msgs custom_msgs)
+
 install(TARGETS
-        arming waypoint
+        arming waypoint nearest_neighbors
         DESTINATION lib/${PROJECT_NAME})
 
 if (BUILD_TESTING)
