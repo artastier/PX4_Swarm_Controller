@@ -104,7 +104,7 @@ NearestNeighbors::NearestNeighbors() : Node("nearest_neighbors") {
     };
 
     // Create a timer to periodically check and arm the drones
-    timer = this->create_wall_timer(1s, timer_callback);
+    timer = this->create_wall_timer(100ms, timer_callback);
 
 };
 
@@ -137,12 +137,13 @@ void NearestNeighbors::find_neighbors() {
                                        if (is_neighbor) {
                                            const bool is_a_leader{this->leaders[neighbor_idx]};
                                            neighbors_leaders.emplace_back(is_a_leader);
+                                           // TODO: Check if the neighbors are well detected
                                            RCLCPP_INFO(this->get_logger(),
                                                        "Drone n°%u is the neighbor of drone n°%u and its leadership is %u",
                                                        neighbor_idx, drone_idx,
                                                        is_a_leader);
                                        }
-                                       ++drone_idx;
+                                       ++neighbor_idx;
                                        return is_neighbor;
                                    });
                       Neighbors nearest_neighbors;
