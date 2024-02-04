@@ -50,20 +50,16 @@ private:
 };
 
 NearestNeighbors::NearestNeighbors() : Node("nearest_neighbors") {
-
     // Definition of the parameters required for a leader-follower control (i.e you can remove the "is_leader"
     // parameter if neeeded)
-    // this->declare_parameter<int>("nb_drones");
-    // this->declare_parameter<double>("neighbor_distance");
-    // this->declare_parameter<std::vector<bool>>("leaders");
+    this->declare_parameter<int>("nb_drones");
+    this->declare_parameter<double>("neighbor_distance");
+    this->declare_parameter<std::vector<bool>>("leaders");
 
-    // nb_drones = static_cast<std::size_t>(this->get_parameter("nb_drones").as_int());
-    // neighbor_distance = this->get_parameter("neighbor_distance").as_double();
+    nb_drones = static_cast<std::size_t>(this->get_parameter("nb_drones").as_int());
+    neighbor_distance = this->get_parameter("neighbor_distance").as_double();
     // TODO: Check if it works
-    // leaders = this->get_parameter("leaders").as_bool_array();
-    nb_drones = 2;
-    neighbor_distance = 2.0;
-    leaders = {true, false};
+    leaders = this->get_parameter("leaders").as_bool_array();
     // Definition of the publishers and the subscribers
     position_subscribers.reserve(nb_drones);
     neighbors_publishers.reserve(nb_drones);
@@ -79,7 +75,7 @@ NearestNeighbors::NearestNeighbors() : Node("nearest_neighbors") {
                                                                                           }));
         auto publisher_topic{"/px4_" + std::to_string(i + 1) + "/fmu/out/nearest_neighbors"};
         // TODO: Understand why using these publishers doesn't work
-        // neighbors_publishers.emplace_back(this->create_publisher<Neighbors>(publisher_topic, 10));
+        neighbors_publishers.emplace_back(this->create_publisher<Neighbors>(publisher_topic, 10));
     }
 
     position_received.reserve(nb_drones);
@@ -129,7 +125,7 @@ void NearestNeighbors::find_neighbors() {
                       std::vector<bool> neighbors_leaders;
                       std::copy_if(std::begin(this->drones_positions), std::end(this->drones_positions),
                                    std::back_inserter(neighbors_positions),
-                                   [this, &neighbors_leaders, position, drone_idx, neighbor_idx = 0u](
+                                   [this, &neighbors_leaders, position, neighbor_idx = 0u](
                                            const auto &neighbor_position) mutable {
                                        bool is_neighbor{
                                                NearestNeighbors::is_neighbor(position, neighbor_position,
@@ -137,11 +133,6 @@ void NearestNeighbors::find_neighbors() {
                                        if (is_neighbor) {
                                            const bool is_a_leader{this->leaders[neighbor_idx]};
                                            neighbors_leaders.emplace_back(is_a_leader);
-                                           // TODO: Check if the neighbors are well detected
-                                           RCLCPP_INFO(this->get_logger(),
-                                                       "Drone n°%u is the neighbor of drone n°%u and its leadership is %u",
-                                                       neighbor_idx, drone_idx,
-                                                       is_a_leader);
                                        }
                                        ++neighbor_idx;
                                        return is_neighbor;
@@ -150,7 +141,7 @@ void NearestNeighbors::find_neighbors() {
                       if ((!std::empty(neighbors_leaders)) && (!std::empty(neighbors_positions))) {
                           nearest_neighbors.set__neighbors_leaders(neighbors_leaders);
                           nearest_neighbors.set__neighbors_position(neighbors_positions);
-                          // this->neighbors_publishers[drone_idx]->publish(*nearest_neighbors);
+                          this->neighbors_publishers[drone_idx]->publish(nearest_neighbors);
                       }
                       ++drone_idx;
 

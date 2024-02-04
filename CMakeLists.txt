@@ -13,10 +13,10 @@ find_package(rclpy REQUIRED)
 find_package(px4_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(yaml-cpp REQUIRED)
-# I didn't build the message in this package becaus it seems to create issues with ament python
+# I didn't build the message in this package because it seems to create issues with ament python
 find_package(custom_msgs REQUIRED)
 
-include_directories(include ${YAML_CPP_INCLUDE_DIRS} ${px4_msgs_INCLUDE_DIRS})
+include_directories(include ${YAML_CPP_INCLUDE_DIRS})
 add_executable(arming src/arming_node.cpp)
 ament_target_dependencies(arming rclcpp px4_msgs)
 
