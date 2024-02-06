@@ -27,8 +27,11 @@ target_link_libraries(waypoint ${YAML_CPP_LIBRARIES})
 add_executable(nearest_neighbors src/nearest_neighbors_node.cpp)
 ament_target_dependencies(nearest_neighbors rclcpp px4_msgs custom_msgs)
 
+add_executable(swarm_controller src/swarm_controller_node.cpp)
+ament_target_dependencies(swarm_controller rclcpp px4_msgs custom_msgs)
+
 install(TARGETS
-        arming waypoint nearest_neighbors
+        arming waypoint nearest_neighbors swarm_controller
         DESTINATION lib/${PROJECT_NAME})
 
 if (BUILD_TESTING)
