@@ -123,9 +123,10 @@ void NearestNeighbors::find_neighbors() {
                   [this, drone_idx = 0u](const auto &position)mutable {
                       std::vector<VehicleLocalPosition> neighbors_positions;
                       std::vector<bool> neighbors_leaders;
+                      std::vector<uint8_t>  neighbors_ids;
                       std::copy_if(std::begin(this->drones_positions), std::end(this->drones_positions),
                                    std::back_inserter(neighbors_positions),
-                                   [this, &neighbors_leaders, position, neighbor_idx = 0u](
+                                   [this, &neighbors_leaders, &neighbors_ids, position, drone_idx,neighbor_idx = 0u](
                                            const auto &neighbor_position) mutable {
                                        bool is_neighbor{
                                                NearestNeighbors::is_neighbor(position, neighbor_position,
@@ -133,6 +134,7 @@ void NearestNeighbors::find_neighbors() {
                                        if (is_neighbor) {
                                            const bool is_a_leader{this->leaders[neighbor_idx]};
                                            neighbors_leaders.emplace_back(is_a_leader);
+                                           neighbors_ids.emplace_back(neighbor_idx);
                                        }
                                        ++neighbor_idx;
                                        return is_neighbor;
@@ -141,6 +143,7 @@ void NearestNeighbors::find_neighbors() {
                       if ((!std::empty(neighbors_leaders)) && (!std::empty(neighbors_positions))) {
                           nearest_neighbors.set__neighbors_leaders(neighbors_leaders);
                           nearest_neighbors.set__neighbors_position(neighbors_positions);
+                          nearest_neighbors.set__neighbors_ids(neighbors_ids);
                           this->neighbors_publishers[drone_idx]->publish(nearest_neighbors);
                       }
                       ++drone_idx;
