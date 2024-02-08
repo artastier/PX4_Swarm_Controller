@@ -15,6 +15,7 @@ find_package(std_msgs REQUIRED)
 find_package(yaml-cpp REQUIRED)
 # I didn't build the message in this package because it seems to create issues with ament python
 find_package(custom_msgs REQUIRED)
+find_package(Eigen3 REQUIRED)
 
 include_directories(include ${YAML_CPP_INCLUDE_DIRS})
 add_executable(arming src/arming_node.cpp)
@@ -28,7 +29,7 @@ add_executable(nearest_neighbors src/nearest_neighbors_node.cpp)
 ament_target_dependencies(nearest_neighbors rclcpp px4_msgs custom_msgs)
 
 add_executable(weighted_topology_controller src/weighted_topology_controller.cpp src/swarm_controller_node.cpp)
-ament_target_dependencies(weighted_topology_controller rclcpp px4_msgs custom_msgs)
+ament_target_dependencies(weighted_topology_controller rclcpp px4_msgs custom_msgs Eigen3)
 
 install(TARGETS
         arming waypoint nearest_neighbors weighted_topology_controller
