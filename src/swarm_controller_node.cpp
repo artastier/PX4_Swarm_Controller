@@ -11,21 +11,22 @@
 
 using namespace std::chrono_literals;
 
-class WeightedTopologyController : public rclcpp::Node {
-    using Neighbors = custom_msgs::msg::Neighbors;
-    using OffboardControlMode = px4_msgs::msg::OffboardControlMode;
+class SwarmController : public rclcpp::Node {
     using TrajectorySetpoint = px4_msgs::msg::TrajectorySetpoint;
     using VehicleLocalPosition = px4_msgs::msg::VehicleLocalPosition;
+public:
+    using Neighbors = custom_msgs::msg::Neighbors;
+    using OffboardControlMode = px4_msgs::msg::OffboardControlMode;
 
 public:
-    WeightedTopologyController();
+    SwarmController();
 
 private:
-    void publish_offboard_control_mode();
+    virtual void publish_offboard_control_mode() = 0;
 
-    void neighbors_callback(const Neighbors::SharedPtr &neighbors);
+    virtual void neighbors_callback(const Neighbors::SharedPtr &neighbors) = 0;
 
-private:
+protected:
     rclcpp::Publisher<OffboardControlMode>::SharedPtr offboard_control_mode_publisher_;
     rclcpp::Publisher<TrajectorySetpoint>::SharedPtr trajectory_setpoint_publisher_;
     rclcpp::Subscription<Neighbors>::SharedPtr neighbors_subscriber;
@@ -45,7 +46,7 @@ private:
 
 };
 
-WeightedTopologyController::WeightedTopologyController() : rclcpp::Node("swarm_controller") {
+SwarmController::SwarmController() : rclcpp::Node("swarm_controller") {
     const std::string name_space{this->get_namespace()};
     this->declare_parameter<int>("drone_id");
     this->declare_parameter<int>("nb_drones");
@@ -73,39 +74,4 @@ WeightedTopologyController::WeightedTopologyController() : rclcpp::Node("swarm_c
     };
     timer = this->create_wall_timer(100ms, timer_callback);
 }
-// TODO: Check to make these methods (publish_offboard_control_mode and neighbors_callback) virtuals.
-/**
- * @brief Publish the offboard control mode.
- */
-void WeightedTopologyController::publish_offboard_control_mode() {
-    OffboardControlMode msg{};
-    msg.position = true;
-    // TODO: Check if velocity control is needed
-    msg.velocity = false;
-    msg.acceleration = false;
-    msg.attitude = false;
-    msg.body_rate = false;
-    msg.timestamp = this->get_clock()->now().nanoseconds() / 1000;
-    offboard_control_mode_publisher_->publish(msg);
-}
 
-/**
- *
- * @brief
- */
-void WeightedTopologyController::neighbors_callback(const Neighbors::SharedPtr &neighbors) {
-
-}
-
-/**
- *
- * @param argc
- * @param argv
- * @return
- */
-int main(int argc, char *argv[]) {
-    rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<WeightedTopologyController>());
-    rclcpp::shutdown();
-    return 0;
-}
