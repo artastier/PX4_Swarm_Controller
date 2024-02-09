@@ -5,13 +5,13 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include "nearest_neighbors.cpp"
-#include <custom_msgs/msg/weighted_topology_neighbors_misc.hpp>
+#include <custom_msgs/msg/weighted_topology_neighbors.hpp>
 
-class WeightedTopologyNeighbors : public NearestNeighbors<custom_msgs::msg::WeightedTopologyNeighborsMisc> {
-    using WeightedTopologyNeighborsMisc = custom_msgs::msg::WeightedTopologyNeighborsMisc;
-    using NearestNeighborsType = NearestNeighbors<WeightedTopologyNeighborsMisc>;
+class WeightedTopologyNeighbors : public NearestNeighbors<custom_msgs::msg::WeightedTopologyNeighbors> {
+    using WeightedTopologyNeighborsMsg = custom_msgs::msg::WeightedTopologyNeighbors;
+    using NearestNeighborsType = NearestNeighbors<WeightedTopologyNeighbors>;
 public:
-    WeightedTopologyNeighbors() : NearestNeighbors<custom_msgs::msg::WeightedTopologyNeighborsMisc>() {
+    WeightedTopologyNeighbors() : NearestNeighbors<custom_msgs::msg::WeightedTopologyNeighbors>() {
         this->declare_parameter<std::vector<bool>>("leaders");
         leaders = this->get_parameter("leaders").as_bool_array();
 
@@ -20,7 +20,7 @@ public:
 private:
     bool process_neighbor_position(const std::size_t neighbor_idx, const VehicleLocalPosition &position,
                                    const VehicleLocalPosition &neighbor_position,
-                                   Neighbors &nearest_neighbors, NeighborsMisc &neighbors_misc) {
+                                   WeightedTopologyNeighborsMsg &nearest_neighbors) override{
 
         bool is_neighbor{
                 NearestNeighbors::is_neighbor(position, neighbor_position,

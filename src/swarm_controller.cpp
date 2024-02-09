@@ -10,9 +10,10 @@
 
 using namespace std::chrono_literals;
 
+// TODO: See if it's necessary to template SwarmController on NeighborsMisc
 class SwarmController : public rclcpp::Node {
     using TrajectorySetpoint = px4_msgs::msg::TrajectorySetpoint;
-public:
+protected:
     using Neighbors = custom_msgs::msg::Neighbors;
     using OffboardControlMode = px4_msgs::msg::OffboardControlMode;
 
@@ -42,7 +43,7 @@ SwarmController::SwarmController() : rclcpp::Node("swarm_controller") {
     trajectory_setpoint_publisher_ = this->create_publisher<TrajectorySetpoint>(
             name_space + "/fmu/in/trajectory_setpoint", 10);
 
-    neighbors_subscriber = this->create_subscription<Neighbors>(name_space + "/fmu/out/nearest_neighbors_pose", 10,
+    neighbors_subscriber = this->create_subscription<Neighbors>(name_space + "/fmu/out/nearest_neighbors", 10,
                                                                 [this](const Neighbors::SharedPtr neighbors) {
                                                                     neighbors_callback(neighbors);
                                                                 });

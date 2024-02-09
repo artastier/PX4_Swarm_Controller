@@ -8,15 +8,14 @@
 
 using namespace std::chrono_literals;
 
-template<typename NeighborsMisc>
+// TODO: Check if it would be more efficient to directly template over the Neighbors type
+template<typename Neighbors>
 class NearestNeighbors : public rclcpp::Node {
-public:
-    using Neighbors = custom_msgs::msg::Neighbors;
+protected:
     using VehicleLocalPosition = px4_msgs::msg::VehicleLocalPosition;
 private:
     using PositionSubscriberSharedPtr = rclcpp::Subscription<VehicleLocalPosition>::SharedPtr;
-    using MiscPublisherSharedPtr = typename rclcpp::Publisher<NeighborsMisc>::SharedPtr;
-    using NeighborsPublisherSharedPtr = rclcpp::Publisher<Neighbors>::SharedPtr;
+    using NeighborsPublisherSharedPtr = typename rclcpp::Publisher<Neighbors>::SharedPtr;
 public:
     /**
      * @brief
@@ -43,11 +42,9 @@ public:
                                                                                                   pose_subscriber_callback(
                                                                                                           msg, i);
                                                                                               }));
-            auto pose_publisher_topic{"/px4_" + std::to_string(i + 1) + "/fmu/out/nearest_neighbors_pose"};
+            auto pose_publisher_topic{"/px4_" + std::to_string(i + 1) + "/fmu/out/nearest_neighbors"};
             neighbors_publishers.emplace_back(this->create_publisher<Neighbors>(pose_publisher_topic, 10));
 
-            auto misc_publisher_topic{"/px4_" + std::to_string(i + 1) + "/fmu/out/nearest_neighbors_misc"};
-            neighbors_misc_publishers.emplace_back(this->create_publisher<NeighborsMisc>(misc_publisher_topic, 10));
         }
 
         position_received.reserve(nb_drones);
@@ -101,10 +98,9 @@ private:
      */
     void process_position(const std::size_t drone_idx, const VehicleLocalPosition &position) {
         Neighbors nearest_neighbors;
-        NeighborsMisc neighbors_misc;
         std::copy_if(std::begin(this->drones_positions), std::end(this->drones_positions),
                      std::back_inserter(nearest_neighbors.neighbors_position),
-                     [this, &nearest_neighbors, &neighbors_misc, position, neighbor_idx = 0u](
+                     [this, &nearest_neighbors, position, neighbor_idx = 0u](
                              const auto &neighbor_position) mutable {
                          bool is_neighbor{
                                  process_neighbor_position(neighbor_idx, position, neighbor_position,
@@ -112,9 +108,9 @@ private:
                          ++neighbor_idx;
                          return is_neighbor;
                      });
+        // TODO: Create virtual function to check if the msg is empty
         if (!std::empty(nearest_neighbors.neighbors_ids)) {
             this->neighbors_publishers[drone_idx]->publish(nearest_neighbors);
-            this->neighbors_misc_publishers[drone_idx]->publish(neighbors_misc);
         }
     }
 
@@ -123,8 +119,8 @@ private:
      */
     virtual bool process_neighbor_position(const std::size_t neighbor_idx, const VehicleLocalPosition &position,
                                            const VehicleLocalPosition &neighbor_position,
-                                           Neighbors &nearest_neighbors, NeighborsMisc& neighbors_misc) = 0;
-
+                                           Neighbors &nearest_neighbors) = 0;
+protected:
     /**
      * @brief
      */
@@ -135,7 +131,6 @@ private:
     };
 
 protected:
-    std::vector<MiscPublisherSharedPtr> neighbors_misc_publishers;
     double neighbor_distance{};
 private:
     std::vector<NeighborsPublisherSharedPtr> neighbors_publishers;
