@@ -42,7 +42,7 @@ SwarmController::SwarmController() : rclcpp::Node("swarm_controller") {
     trajectory_setpoint_publisher_ = this->create_publisher<TrajectorySetpoint>(
             name_space + "/fmu/in/trajectory_setpoint", 10);
 
-    neighbors_subscriber = this->create_subscription<Neighbors>(name_space + "/fmu/out/nearest_neighbors", 10,
+    neighbors_subscriber = this->create_subscription<Neighbors>(name_space + "/fmu/out/nearest_neighbors_pose", 10,
                                                                 [this](const Neighbors::SharedPtr neighbors) {
                                                                     neighbors_callback(neighbors);
                                                                 });
