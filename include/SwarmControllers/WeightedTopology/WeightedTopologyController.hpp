@@ -13,31 +13,23 @@
 #include <px4_msgs/msg/vehicle_local_position.hpp>
 #include <eigen3/Eigen/Eigen>
 #include "SwarmController.hpp"
+#include <custom_msgs/msg/weighted_topology_neighbors.hpp>
+
 
 // TODO: Add doxygen
-class WeightedTopologyController : public SwarmController {
+class WeightedTopologyController : public SwarmController<custom_msgs::msg::WeightedTopologyNeighbors> {
     using OffboardControlMode = SwarmController::OffboardControlMode;
-    using Neighbors = SwarmController::Neighbors;
-    using PRCS = Eigen::Vector<std::size_t, Eigen::Dynamic>;
-    using Weights = Eigen::VectorXd;
+    using WeightedTopologyNeighbors = custom_msgs::msg::WeightedTopologyNeighbors;
 public:
     WeightedTopologyController();
 
 private:
     void publish_offboard_control_mode() override;
 
-    void neighbors_callback(const Neighbors::SharedPtr &neighbors) override;
+    void neighbors_callback(const WeightedTopologyNeighbors::SharedPtr &neighbors) override;
 
     void timer_callback() override;
 
 private:
-    PRCS prcs;
-    Weights weights;
-
-    std::size_t drone_id{};
-    std::size_t nb_drones{};
-
-    double x_init{};
-    double y_init{};
 
 };
