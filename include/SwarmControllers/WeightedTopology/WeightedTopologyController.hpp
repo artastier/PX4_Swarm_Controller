@@ -18,18 +18,42 @@
 
 // TODO: Add doxygen
 class WeightedTopologyController : public SwarmController<custom_msgs::msg::WeightedTopologyNeighbors> {
-    using OffboardControlMode = SwarmController::OffboardControlMode;
     using WeightedTopologyNeighbors = custom_msgs::msg::WeightedTopologyNeighbors;
+    using SwarmControllerType = SwarmController<custom_msgs::msg::WeightedTopologyNeighbors>;
+    using TrajectorySetpoint = SwarmControllerType::TrajectorySetpoint;
+    using PoseTwist = Eigen::Vector<float, 6>;
+    using Neighborhood = Eigen::Matrix<float, 6, Eigen::Dynamic>;
+    using Gains = Eigen::Vector<float, 6>;
 public:
     WeightedTopologyController();
 
 private:
-    void publish_offboard_control_mode() override;
+    /**
+     *
+     * @param neighbors
+     */
+    void neighbors_to_matrix(const WeightedTopologyNeighbors &neighbors);
 
+    /**
+     *
+     * @param neighbors
+     */
     void neighbors_callback(const WeightedTopologyNeighbors::SharedPtr &neighbors) override;
 
+    /**
+     *
+     */
     void timer_callback() override;
 
-private:
+    /**
+     *
+     */
+    void compute_command(TrajectorySetpoint& setpoint);
 
+private:
+    Neighborhood neighborhood;
+    Gains gains;
+    bool is_neighborhood_empty{true};
+    // TODO: Take it as a parameter
+    std::vector<float> default_pose{0., 0., 3.};
 };

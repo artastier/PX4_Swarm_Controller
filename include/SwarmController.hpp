@@ -28,14 +28,13 @@ class SwarmController : public rclcpp::Node {
     static_assert(traits::has_neighbors_position_attribute_and_is_VLP_v<Neighbors>,
                   "Neighbors type must have neighbors_position attribute of type vector<px4_msgs::msg::VehicleLocalPosition>");
     static_assert(traits::has_shared_ptr_v<Neighbors>,"The Neighbors type doesn't define ::SharedPtr");
-    using TrajectorySetpoint = px4_msgs::msg::TrajectorySetpoint;
-protected:
     using OffboardControlMode = px4_msgs::msg::OffboardControlMode;
+protected:
+    using TrajectorySetpoint = px4_msgs::msg::TrajectorySetpoint;
 
 public:
     SwarmController() : rclcpp::Node("swarm_controller") {
         const std::string name_space{this->get_namespace()};
-
         offboard_control_mode_publisher_ = this->create_publisher<OffboardControlMode>(
                 name_space + "/fmu/in/offboard_control_mode", 10);
         trajectory_setpoint_publisher_ = this->create_publisher<TrajectorySetpoint>(
@@ -84,8 +83,9 @@ private:
     virtual void timer_callback() = 0;
 
 protected:
-    rclcpp::Publisher<OffboardControlMode>::SharedPtr offboard_control_mode_publisher_;
     rclcpp::Publisher<TrajectorySetpoint>::SharedPtr trajectory_setpoint_publisher_;
+private:
+    rclcpp::Publisher<OffboardControlMode>::SharedPtr offboard_control_mode_publisher_;
     typename rclcpp::Subscription<Neighbors>::SharedPtr neighbors_subscriber;
     rclcpp::TimerBase::SharedPtr timer;
 
