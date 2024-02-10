@@ -14,6 +14,9 @@ using namespace std::chrono_literals;
 // TODO: Add doxygen
 template<typename Neighbors>
 class SwarmController : public rclcpp::Node {
+    // This trait ensure checking std::empty(neighborhood.neighbors_position) won't crash
+    static_assert(traits::has_neighbors_position_attribute_and_is_VLP_v<Neighbors>,
+                  "Neighbors type must have neighbors_position attribute of type vector<px4_msgs::msg::VehicleLocalPosition>");
     static_assert(traits::has_shared_ptr_v<Neighbors>,"The Neighbors type doesn't define ::SharedPtr");
     using TrajectorySetpoint = px4_msgs::msg::TrajectorySetpoint;
 protected:
