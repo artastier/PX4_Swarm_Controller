@@ -8,9 +8,9 @@
 WeightedTopologyNeighbors::WeightedTopologyNeighbors()
         : NearestNeighbors<custom_msgs::msg::WeightedTopologyNeighbors>() {
     this->declare_parameter<std::vector<bool>>("leaders");
-    this->declare_parameter<std::vector<bool>>("x_formation");
-    this->declare_parameter<std::vector<bool>>("y_formation");
-    this->declare_parameter<std::vector<bool>>("z_formation");
+    this->declare_parameter<std::vector<double>>("x_formation");
+    this->declare_parameter<std::vector<double>>("y_formation");
+    this->declare_parameter<std::vector<double>>("z_formation");
 //  Provide x_formation, y_formation and z_formation according the NED frame
     const auto x_formation{this->get_parameter("x_formation").as_double_array()};
     const auto y_formation{this->get_parameter("y_formation").as_double_array()};
