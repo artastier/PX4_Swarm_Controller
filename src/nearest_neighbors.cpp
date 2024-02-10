@@ -1,23 +1,32 @@
 /**
-* @author Arthur Astier
-*/
+ * @brief NearestNeighbors class template for finding nearest neighbors based on vehicle positions.
+ * @details This class template provides functionality to find nearest neighbors among a group of vehicles based on their positions.
+ * @tparam Neighbors Type representing the neighbors.
+ * @author Arthur Astier
+ */
 #include <rclcpp/rclcpp.hpp>
+#include <NeighborsTraits.hpp>
 #include <px4_msgs/msg/vehicle_local_position.hpp>
 #include <chrono>
-#include <custom_msgs/msg/neighbors.hpp>
 
 using namespace std::chrono_literals;
 
 template<typename Neighbors>
 class NearestNeighbors : public rclcpp::Node {
+    static_assert(traits::has_neighbors_position_attribute_and_is_VLP_v<Neighbors>,
+                  "Neighbors type must have neighbors_position attribute of type vector<px4_msgs::msg::VehicleLocalPosition>");
+
 protected:
     using VehicleLocalPosition = px4_msgs::msg::VehicleLocalPosition;
+
 private:
     using PositionSubscriberSharedPtr = rclcpp::Subscription<VehicleLocalPosition>::SharedPtr;
     using NeighborsPublisherSharedPtr = typename rclcpp::Publisher<Neighbors>::SharedPtr;
+
 public:
     /**
-     * @brief
+     * @brief Constructor for NearestNeighbors class.
+     * @details Initializes the NearestNeighbors node and sets up publishers and subscribers.
      */
     NearestNeighbors() : Node("nearest_neighbors") {
         // Definition of the parameters required for a leader-follower control (i.e you can remove the "is_leader"
@@ -27,7 +36,6 @@ public:
 
         nb_drones = static_cast<std::size_t>(this->get_parameter("nb_drones").as_int());
         neighbor_distance = this->get_parameter("neighbor_distance").as_double();
-
         // Definition of the publishers and the subscribers
         position_subscribers.reserve(nb_drones);
         neighbors_publishers.reserve(nb_drones);
@@ -72,42 +80,47 @@ public:
 
 private:
     /**
-    * @brief Callback function for the vehicle local position subscriber.
-    * @param pose The received vehicle local position message.
-    */
+     * @brief Callback function for the vehicle local position subscriber.
+     * @param pose The received vehicle local position message.
+     * @param drone_idx The index of the drone.
+     */
     void pose_subscriber_callback(const VehicleLocalPosition::SharedPtr &pose, const std::size_t drone_idx) {
         position_received[drone_idx] = true;
         drones_positions[drone_idx] = *pose;
     }
 
     /**
-     * @brief
+     * @brief Find the nearest neighbors for each drone.
      */
     void find_neighbors() {
         std::vector<Neighbors> neighborhoods;
         neighborhoods.reserve(nb_drones);
         // TODO: Try to optimize the search by using branch and bound or take into account the reciprocity of being neighbors
         std::for_each(std::begin(drones_positions), std::end(drones_positions),
-                      [this, &neighborhoods,drone_idx = 0u](const auto &position)mutable {
+                      [this, &neighborhoods, drone_idx = 0u](const auto &position)mutable {
                           neighborhoods.emplace_back(process_position(drone_idx, position));
                           ++drone_idx;
                       });
 
-        std::for_each(std::begin(neighborhoods),std::end(neighborhoods),[this, drone_idx = 0u](auto& neighborhood) mutable{
-            // This condition is generic because we are checking in the traits that the Neighbors type defines at least a neighbors_position attribute
-            if(!std::empty(neighborhood.neighbors_position)){
-                enrich_neighborhood(neighborhood);
-                this->neighbors_publishers[drone_idx]->publish(neighborhood);
-            }
-        });
+        std::for_each(std::begin(neighborhoods), std::end(neighborhoods),
+                      [this, drone_idx = 0u](auto &neighborhood) mutable {
+                          // This condition is generic because we are checking in the traits that the Neighbors type defines at least a neighbors_position attribute
+                          if (!std::empty(neighborhood.neighbors_position)) {
+                              enrich_neighborhood(neighborhood);
+                              this->neighbors_publishers[drone_idx]->publish(neighborhood);
+                              ++drone_idx;
+                          }
+                      });
     }
 
     /**
-     * @brief
+     * @brief Process the position of a drone and find its neighbors.
+     * @param drone_idx The index of the drone.
+     * @param position The position of the drone.
+     * @return Neighbors object containing the information of the neighbors.
      */
     Neighbors process_position(const std::size_t drone_idx, const VehicleLocalPosition &position) {
         Neighbors neighborhood;
-        // TODO: Check that neighbors has at least an attribute neighbors_position in a traits
         std::copy_if(std::begin(this->drones_positions), std::end(this->drones_positions),
                      std::back_inserter(neighborhood.neighbors_position),
                      [this, &neighborhood, position, neighbor_idx = 0u](
@@ -115,7 +128,7 @@ private:
                          bool is_neighbor{
                                  NearestNeighbors::is_neighbor(position, neighbor_position,
                                                                this->neighbor_distance)};
-                         if(is_neighbor){
+                         if (is_neighbor) {
                              process_neighbor_position(neighbor_idx, position, neighbor_position,
                                                        neighborhood);
                          }
@@ -126,29 +139,38 @@ private:
         return neighborhood;
     }
 
+protected:
     /**
-     * @breif The positions of the neighbors are automatically added to the nearest_neighbors message.
-     * You only need to add the other information of each neighbor you want to send in your custom message.
+     * @brief Process the position of a neighbor and add information to the neighborhood.
+     * @param neighbor_idx The index of the neighbor.
+     * @param position The position of the drone.
+     * @param neighbor_position The position of the neighbor.
+     * @param neighborhood The neighborhood to be enriched.
      */
     virtual void process_neighbor_position(const std::size_t neighbor_idx, const VehicleLocalPosition &position,
                                            const VehicleLocalPosition &neighbor_position,
-                                           Neighbors &neighborhood){};
-    /**
-     * @brief This method aims to extract information of the whole neighborhood and not only one neighbor.
-     * @param drone_idx
-     * @param neighborhood
-     */
-    virtual void process_neighborhood(const std::size_t drone_idx, Neighbors &neighborhood){};
+                                           Neighbors &neighborhood) {};
 
     /**
-     * The purpose of this function is to enrich the neighborhood with information that requires the neighborhoods of
-     * each drone to have been calculated.
-     * @param neighborhood
+     * @brief Process the entire neighborhood and add any additional information if needed.
+     * @param drone_idx The index of the drone.
+     * @param neighborhood The neighborhood to be processed.
      */
-    virtual void enrich_neighborhood(Neighbors& neighborhood){};
+    virtual void process_neighborhood(const std::size_t drone_idx, Neighbors &neighborhood) {};
 
     /**
-     * @brief
+     * @brief Enrich the neighborhood with additional information.
+     * @param neighborhood The neighborhood to be enriched.
+     */
+    virtual void enrich_neighborhood(Neighbors &neighborhood) {};
+
+private:
+    /**
+     * @brief Check if two positions are within a certain distance, indicating they are neighbors.
+     * @param lhs The first position.
+     * @param rhs The second position.
+     * @param distance The maximum distance for two positions to be considered neighbors.
+     * @return True if the positions are neighbors, false otherwise.
      */
     static bool is_neighbor(const VehicleLocalPosition &lhs, const VehicleLocalPosition &rhs, const double distance) {
         const auto drone_distance{std::hypot(lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z)};
@@ -159,12 +181,12 @@ private:
 protected:
     double neighbor_distance{};
     std::size_t nb_drones{};
-    std::vector<NeighborsPublisherSharedPtr> neighbors_publishers;
+
 private:
+    std::vector<NeighborsPublisherSharedPtr> neighbors_publishers;
     std::vector<PositionSubscriberSharedPtr> position_subscribers;
     rclcpp::TimerBase::SharedPtr timer;
     // Parameters
     std::vector<bool> position_received;
     std::vector<VehicleLocalPosition> drones_positions;
 };
-

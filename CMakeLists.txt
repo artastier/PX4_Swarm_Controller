@@ -25,14 +25,14 @@ add_executable(waypoint src/waypoint.cpp)
 ament_target_dependencies(waypoint rclcpp px4_msgs std_msgs)
 target_link_libraries(waypoint ${YAML_CPP_LIBRARIES})
 
-add_executable(weighted_topology_neighbors src/nearest_neighbors.cpp src/weighted_topology_neighbors.cpp)
-ament_target_dependencies(weighted_topology_neighbors rclcpp px4_msgs custom_msgs)
+add_executable(weighted_topology_neighbors include src/nearest_neighbors.cpp src/weighted_topology_neighbors.cpp)
+ament_target_dependencies(weighted_topology_neighbors rclcpp px4_msgs custom_msgs Eigen3)
 
-add_executable(weighted_topology_controller src/weighted_topology_controller.cpp src/swarm_controller.cpp)
-ament_target_dependencies(weighted_topology_controller rclcpp px4_msgs custom_msgs Eigen3)
+#add_executable(weighted_topology_controller src/weighted_topology_controller.cpp src/swarm_controller.cpp)
+#ament_target_dependencies(weighted_topology_controller rclcpp px4_msgs custom_msgs Eigen3)
 
 install(TARGETS
-        arming waypoint weighted_topology_neighbors weighted_topology_controller
+        arming waypoint weighted_topology_neighbors
         DESTINATION lib/${PROJECT_NAME})
 
 if (BUILD_TESTING)
