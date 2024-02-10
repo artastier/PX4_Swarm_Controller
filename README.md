@@ -211,6 +211,15 @@ Node(
 )
 ```
 
+### Create your own control law
+#### Neighbors
+3 stages
+- Neighbor
+- Neighborhood
+- Neighborhood of each drone calculated
+
+#### Controller
+
 ### Launching the simulation
 
 You can run the simulation by launching ```lauch_simulation.py```:
