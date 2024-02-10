@@ -15,6 +15,7 @@ using namespace std::chrono_literals;
 
 template<typename Neighbors>
 class NearestNeighbors : public rclcpp::Node {
+    // This trait ensure checking std::empty(neighborhood.neighbors_position) won't crash
     static_assert(traits::has_neighbors_position_attribute_and_is_VLP_v<Neighbors>,
                   "Neighbors type must have neighbors_position attribute of type vector<px4_msgs::msg::VehicleLocalPosition>");
 
