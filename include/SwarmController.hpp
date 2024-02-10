@@ -11,6 +11,16 @@
 
 using namespace std::chrono_literals;
 
+enum class CONTROL{
+    POSITION = 0,
+    VELOCITY = 1,
+    ACCELERATION = 2,
+    ATTITUDE = 3,
+    BODY_RATE = 4,
+    THRUST_TORQUE = 5,
+    DIRECT_ACTUATOR = 6
+};
+
 // TODO: Add doxygen
 template<typename Neighbors>
 class SwarmController : public rclcpp::Node {
@@ -39,9 +49,36 @@ public:
         timer = this->create_wall_timer(100ms, [this]() { timer_callback(); });
     }
 
+protected:
+    void publish_offboard_control_mode(const CONTROL& control){
+        OffboardControlMode msg{};
+        switch (control) {
+            case CONTROL::POSITION:
+                msg.position = true;
+                break;
+            case CONTROL::VELOCITY:
+                msg.velocity = true;
+                break;
+            case CONTROL::ACCELERATION:
+                msg.acceleration = true;
+                break;
+            case CONTROL::ATTITUDE:
+                msg.attitude = true;
+                break;
+            case CONTROL::BODY_RATE:
+                msg.body_rate = true;
+                break;
+            case CONTROL::THRUST_TORQUE:
+                msg.thrust_and_torque = true;
+                break;
+            case CONTROL::DIRECT_ACTUATOR:
+                msg.thrust_and_torque = true;
+                break;
+        }
+        msg.timestamp = this->get_clock()->now().nanoseconds() / 1000;
+        offboard_control_mode_publisher_->publish(msg);
+    }
 private:
-    virtual void publish_offboard_control_mode() = 0;
-
     virtual void neighbors_callback(const typename Neighbors::SharedPtr &neighbors) = 0;
 
     virtual void timer_callback() = 0;
