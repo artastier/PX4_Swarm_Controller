@@ -69,6 +69,22 @@ def generate_launch_description():
         ),
         Node(
             package='px4_swarm_controller',
+            executable='waypoint',
+            name='waypoint',
+            namespace='px4_3',
+            parameters=[
+                {"wp_path": os.path.join(package_dir, "config", "waypoints.yaml"), "x_init": 0.0, "y_init": -1.0}]
+        ),
+        Node(
+            package='px4_swarm_controller',
+            executable='waypoint',
+            name='waypoint',
+            namespace='px4_4',
+            parameters=[
+                {"wp_path": os.path.join(package_dir, "config", "waypoints.yaml"), "x_init": -1.0, "y_init": 0.0}]
+        ),
+        Node(
+            package='px4_swarm_controller',
             executable='arming',
             name='arming',
             namespace='simulation',
@@ -76,9 +92,11 @@ def generate_launch_description():
         ),
         Node(
             package='px4_swarm_controller',
-            executable='nearest_neighbors',
+            executable='weighted_topology_neighbors',
             name='nearest_neighbors',
             namespace='simulation',
-            parameters=[{"nb_drones": nb_drones, "neighbor_distance": 1.0, "leaders": is_leaders}]
+            parameters=[
+                {"nb_drones": nb_drones, "neighbor_distance": 1.0, "leaders": is_leaders, "x_formation": [1., 0., -1., 0.],
+                 "y_formation": [0., 1., 0., -1.], "z_formation": [0., 0., 0., 0.]}]
         )
     ])
