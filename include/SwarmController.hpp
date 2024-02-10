@@ -1,6 +1,7 @@
 /**
 * @author Arthur Astier
 */
+#pragma once
 
 #include <rclcpp/rclcpp.hpp>
 #include <chrono>
@@ -10,7 +11,8 @@
 
 using namespace std::chrono_literals;
 
-// TODO: See if it's necessary to template SwarmController on NeighborsMisc
+// TODO: See if it's necessary to template SwarmController on the Neighbors type
+// TODO: Add doxygen
 class SwarmController : public rclcpp::Node {
     using TrajectorySetpoint = px4_msgs::msg::TrajectorySetpoint;
 protected:

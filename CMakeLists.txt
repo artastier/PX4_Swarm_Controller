@@ -18,17 +18,17 @@ find_package(custom_msgs REQUIRED)
 find_package(Eigen3 REQUIRED)
 
 include_directories(include ${YAML_CPP_INCLUDE_DIRS})
-add_executable(arming src/arming_node.cpp)
+add_executable(arming include src/Arming.cpp)
 ament_target_dependencies(arming rclcpp px4_msgs)
 
-add_executable(waypoint src/waypoint.cpp)
+add_executable(waypoint include src/ChangeWaypoint.cpp)
 ament_target_dependencies(waypoint rclcpp px4_msgs std_msgs)
 target_link_libraries(waypoint ${YAML_CPP_LIBRARIES})
 
-add_executable(weighted_topology_neighbors include src/nearest_neighbors.cpp src/weighted_topology_neighbors.cpp)
+add_executable(weighted_topology_neighbors include src/WeightedTopologyNeighbors.cpp)
 ament_target_dependencies(weighted_topology_neighbors rclcpp px4_msgs custom_msgs Eigen3)
 
-#add_executable(weighted_topology_controller src/weighted_topology_controller.cpp src/swarm_controller.cpp)
+#add_executable(weighted_topology_controller include src/WeightedTopologyController.cpp)
 #ament_target_dependencies(weighted_topology_controller rclcpp px4_msgs custom_msgs Eigen3)
 
 install(TARGETS

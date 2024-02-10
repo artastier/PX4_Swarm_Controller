@@ -1,70 +1,8 @@
 /**
- * @file change_waypoint_node.cpp
- * @brief ROS 2 Node for changing waypoints based on vehicle position.
- * @author Arthur Astier
- */
+* @author Arthur Astier
+*/
 
-#include <rclcpp/rclcpp.hpp>
-#include <px4_msgs/msg/trajectory_setpoint.hpp>
-#include <px4_msgs/msg/vehicle_local_position.hpp>
-#include <px4_msgs/msg/offboard_control_mode.hpp>
-#include <yaml-cpp/yaml.h>
-
-/**
- * @class ChangeWaypoint
- * @brief ROS 2 Node for changing waypoints based on vehicle position.
- */
-class ChangeWaypoint : public rclcpp::Node {
-    using OffboardControlMode = px4_msgs::msg::OffboardControlMode;
-    using TrajectorySetpoint = px4_msgs::msg::TrajectorySetpoint;
-    using VehicleLocalPosition = px4_msgs::msg::VehicleLocalPosition;
-
-public:
-    /**
-     * @brief Constructor for the ChangeWaypoint class.
-     */
-    ChangeWaypoint();
-
-private:
-    /**
-     * @brief Publish the offboard control mode.
-     */
-    void publish_offboard_control_mode();
-
-    /**
-     * @brief Callback function for the vehicle local position subscriber.
-     * @param pose The received vehicle local position message.
-     */
-    void pose_subscriber_callback(const VehicleLocalPosition::SharedPtr& pose);
-
-    /**
-     * @brief Get the value of a coordinate from the waypoints.
-     * @param idx Index of the waypoint.
-     * @param var Variable for the coordinate (e.g., "x", "y", "z", "yaw").
-     * @return The coordinate value.
-     */
-    double coord(const size_t idx, const std::string& var);
-
-    /**
-     * @brief Write the waypoint to be published based on the specified index.
-     * @param idx Index of the waypoint.
-     */
-    void writeWP(const std::size_t idx);
-
-private:
-    rclcpp::Publisher<OffboardControlMode>::SharedPtr offboard_control_mode_publisher_;
-    rclcpp::Publisher<TrajectorySetpoint>::SharedPtr trajectory_setpoint_publisher_;
-    rclcpp::Subscription<VehicleLocalPosition>::SharedPtr pose_subscriber;
-
-    TrajectorySetpoint waypoint;
-    std::size_t wp_idx{0u};
-    YAML::Node waypoints;
-    double threshold{};
-    double threshold_angle{};
-
-    double x_init{};
-    double y_init{};
-};
+#include "ChangeWaypoint.hpp"
 
 /**
  * @brief Constructor for the ChangeWaypoint class.
@@ -111,6 +49,7 @@ ChangeWaypoint::ChangeWaypoint() : Node("waypoint") {
 void ChangeWaypoint::publish_offboard_control_mode() {
     OffboardControlMode msg{};
     msg.position = true;
+    // TODO: Check if velocity control is needed
     msg.velocity = false;
     msg.acceleration = false;
     msg.attitude = false;
@@ -123,7 +62,7 @@ void ChangeWaypoint::publish_offboard_control_mode() {
  * @brief Callback function for the vehicle local position subscriber.
  * @param pose The received vehicle local position message.
  */
-void ChangeWaypoint::pose_subscriber_callback(const VehicleLocalPosition::SharedPtr& pose) {
+void ChangeWaypoint::pose_subscriber_callback(const VehicleLocalPosition::SharedPtr &pose) {
     double theta_d = coord(wp_idx, "yaw");
 
     double distance{std::hypot(pose->x - waypoint.position[0], pose->y - waypoint.position[1],
@@ -149,7 +88,7 @@ void ChangeWaypoint::pose_subscriber_callback(const VehicleLocalPosition::Shared
  * @param var Variable for the coordinate (e.g., "x", "y", "z", "yaw").
  * @return The coordinate value.
  */
-double ChangeWaypoint::coord(const size_t idx, const std::string& var) {
+double ChangeWaypoint::coord(const size_t idx, const std::string &var) {
     return waypoints[idx][var].as<double>();
 }
 
@@ -173,7 +112,7 @@ void ChangeWaypoint::writeWP(const std::size_t idx) {
  * @param argv Array of command line arguments.
  * @return Exit code.
  */
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
     rclcpp::init(argc, argv);
     rclcpp::spin(std::make_shared<ChangeWaypoint>());
     rclcpp::shutdown();

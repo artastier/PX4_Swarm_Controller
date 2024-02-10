@@ -4,8 +4,10 @@
  * @tparam Neighbors Type representing the neighbors.
  * @author Arthur Astier
  */
+#pragma once
+
 #include <rclcpp/rclcpp.hpp>
-#include <NeighborsTraits.hpp>
+#include "NeighborsTraits.hpp"
 #include <px4_msgs/msg/vehicle_local_position.hpp>
 #include <chrono>
 
@@ -186,7 +188,6 @@ private:
     std::vector<NeighborsPublisherSharedPtr> neighbors_publishers;
     std::vector<PositionSubscriberSharedPtr> position_subscribers;
     rclcpp::TimerBase::SharedPtr timer;
-    // Parameters
     std::vector<bool> position_received;
     std::vector<VehicleLocalPosition> drones_positions;
 };
