@@ -14,13 +14,16 @@ class WeightedTopologyNeighbors : public NearestNeighbors<custom_msgs::msg::Weig
     using WeightedTopologyNeighborsMsg = custom_msgs::msg::WeightedTopologyNeighbors;
     using PRCS = Eigen::Vector<std::size_t, Eigen::Dynamic>;
     using Weights = std::vector<double>;
+    using Vector3d = Eigen::Vector3d;
+    using Offsets = std::vector<Vector3d>;
 
 public:
     WeightedTopologyNeighbors();
 
 private:
-    void process_neighbor_position(const std::size_t neighbor_idx, const VehicleLocalPosition &position,
-                                   const VehicleLocalPosition &neighbor_position,
+    void vectors_to_Vector3d(const std::vector<double>& x, const std::vector<double>& y, const std::vector<double>& z);
+    void process_neighbor_position(const std::size_t drone_idx, const std::size_t neighbor_idx, const VehicleLocalPosition &position,
+                                   VehicleLocalPosition &neighbor_position,
                                    WeightedTopologyNeighborsMsg &neighborhood) override;
 
     void process_neighborhood(const std::size_t drone_idx, WeightedTopologyNeighborsMsg &neighborhood) override;
@@ -31,4 +34,5 @@ private:
     std::vector<bool> leaders;
     PRCS prcs;
     PRCS prcs_neighborhood;
+    Offsets offsets;
 };

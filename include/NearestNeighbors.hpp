@@ -31,8 +31,6 @@ public:
      * @details Initializes the NearestNeighbors node and sets up publishers and subscribers.
      */
     NearestNeighbors() : Node("nearest_neighbors") {
-        // Definition of the parameters required for a leader-follower control (i.e you can remove the "is_leader"
-        // parameter if neeeded)
         this->declare_parameter<int>("nb_drones");
         this->declare_parameter<double>("neighbor_distance");
 
@@ -123,15 +121,14 @@ private:
      */
     Neighbors process_position(const std::size_t drone_idx, const VehicleLocalPosition &position) {
         Neighbors neighborhood;
-        std::copy_if(std::begin(this->drones_positions), std::end(this->drones_positions),
-                     std::back_inserter(neighborhood.neighbors_position),
-                     [this, &neighborhood, position, neighbor_idx = 0u](
-                             const auto &neighbor_position) mutable {
+        std::for_each(std::begin(this->drones_positions), std::end(this->drones_positions),
+                     [this, &neighborhood, position, drone_idx, neighbor_idx = 0u](
+                             auto neighbor_position) mutable {
                          bool is_neighbor{
                                  NearestNeighbors::is_neighbor(position, neighbor_position,
                                                                this->neighbor_distance)};
                          if (is_neighbor) {
-                             process_neighbor_position(neighbor_idx, position, neighbor_position,
+                             process_neighbor_position(drone_idx, neighbor_idx, position, neighbor_position,
                                                        neighborhood);
                          }
                          ++neighbor_idx;
@@ -149,8 +146,9 @@ protected:
      * @param neighbor_position The position of the neighbor.
      * @param neighborhood The neighborhood to be enriched.
      */
-    virtual void process_neighbor_position(const std::size_t neighbor_idx, const VehicleLocalPosition &position,
-                                           const VehicleLocalPosition &neighbor_position,
+    virtual void process_neighbor_position(const std::size_t drone_idx, const std::size_t neighbor_idx,
+                                           const VehicleLocalPosition &position,
+                                           VehicleLocalPosition &neighbor_position,
                                            Neighbors &neighborhood) {};
 
     /**
