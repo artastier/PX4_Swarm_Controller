@@ -10,13 +10,13 @@
 /**
 * @brief Constructor for WeightedTopologyNeighbors class.
 */
-WeightedTopologyNeighbors::WeightedTopologyNeighbors()
+Neighborhood::WeightedTopologyNeighbors::WeightedTopologyNeighbors()
         : NearestNeighbors<custom_msgs::msg::WeightedTopologyNeighbors>() {
     this->declare_parameter<std::vector<bool>>("leaders");
     this->declare_parameter<std::vector<double>>("x_formation");
     this->declare_parameter<std::vector<double>>("y_formation");
     this->declare_parameter<std::vector<double>>("z_formation");
-//  Provide x_formation, y_formation and z_formation according the NED frame
+//  Provide x_formation, y_formation and z_formation according to the NED frame
     const auto x_formation{this->get_parameter("x_formation").as_double_array()};
     const auto y_formation{this->get_parameter("y_formation").as_double_array()};
     const auto z_formation{this->get_parameter("z_formation").as_double_array()};
@@ -35,7 +35,7 @@ WeightedTopologyNeighbors::WeightedTopologyNeighbors()
  * @param y The y-coordinates vector.
  * @param z The z-coordinates vector.
  */
-void WeightedTopologyNeighbors::vectors_to_Vector3d(const std::vector<double> &x, const std::vector<double> &y,
+void Neighborhood::WeightedTopologyNeighbors::vectors_to_Vector3d(const std::vector<double> &x, const std::vector<double> &y,
                                                     const std::vector<double> &z) {
     if ((x.size(),y.size(),z.size()) == (nb_drones,nb_drones,nb_drones)) {
         formation.reserve(nb_drones);
@@ -58,12 +58,11 @@ void WeightedTopologyNeighbors::vectors_to_Vector3d(const std::vector<double> &x
  * @param neighbor_position The position of the neighbor drone.
  * @param neighborhood The neighborhood message to be updated.
  */
-void WeightedTopologyNeighbors::process_neighbor_position(const std::size_t drone_idx, const std::size_t neighbor_idx,
+void Neighborhood::WeightedTopologyNeighbors::process_neighbor_position(const std::size_t drone_idx, const std::size_t neighbor_idx,
                                                           const VehicleLocalPosition &position,
                                                           VehicleLocalPosition &neighbor_position,
                                                           WeightedTopologyNeighborsMsg &neighborhood) {
-    // TODO: Modify the neighborhood position with the interdistance wanted between each drone
-    // (for the yaw we can control it directly in the controller with a simple command law)
+    // Modify the neighborhood position with the inter-distance wanted between each drone
     neighbor_position.x =
             position.x - neighbor_position.x - static_cast<float>(formation[drone_idx].x() - formation[neighbor_idx].x());
     neighbor_position.y =
@@ -84,7 +83,7 @@ void WeightedTopologyNeighbors::process_neighbor_position(const std::size_t dron
  * @param drone_idx The index of the current drone.
  * @param neighborhood The neighborhood message to be updated.
  */
-void WeightedTopologyNeighbors::process_neighborhood(const std::size_t drone_idx,
+void Neighborhood::WeightedTopologyNeighbors::process_neighborhood(const std::size_t drone_idx,
                                                      WeightedTopologyNeighborsMsg &neighborhood) {
     if (!std::empty(neighborhood.neighbors_position)) {
         if (leaders[drone_idx]) {
@@ -102,7 +101,7 @@ void WeightedTopologyNeighbors::process_neighborhood(const std::size_t drone_idx
  * @brief Enriches the neighborhood message with weights calculated based on the PRCS (priority based on conflict state) of each neighbor.
  * @param neighborhood The neighborhood message to be enriched.
  */
-void WeightedTopologyNeighbors::enrich_neighborhood(WeightedTopologyNeighborsMsg &neighborhood) {
+void Neighborhood::WeightedTopologyNeighbors::enrich_neighborhood(WeightedTopologyNeighborsMsg &neighborhood) {
 // When we arrive here, all the prcs have been updated
     const auto sum_updated_prcs_neighborhood
             {
@@ -129,7 +128,7 @@ void WeightedTopologyNeighbors::enrich_neighborhood(WeightedTopologyNeighborsMsg
  */
 int main(int argc, char *argv[]) {
     rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<WeightedTopologyNeighbors>());
+    rclcpp::spin(std::make_shared<Neighborhood::WeightedTopologyNeighbors>());
     rclcpp::shutdown();
     return 0;
 }
