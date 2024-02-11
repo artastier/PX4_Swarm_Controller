@@ -1,11 +1,24 @@
 /**
-* @author Arthur Astier
-*/
+ * @brief Controller implementing distributed leader-follower formation control for multiple quadrotors with weighted topology.
+ *
+ * This controller is based on the paper:
+ *
+ * "Distributed leader-follower formation control for multiple quadrotors with weighted topology"
+ * Zhicheng Hou, Isabelle Fantoni, hal-01180491
+ *
+ * It extends the SwarmController class to implement specific behavior for the weighted topology scenario.
+ *
+ * @author Arthur Astier
+ */
 
 #include "SwarmControllers/WeightedTopology/WeightedTopologyController.hpp"
 
-// TODO: Add doxygen
-WeightedTopologyController::WeightedTopologyController() : SwarmController() {
+/**
+ * @brief Constructs a new Weighted Topology Controller object.
+ *
+ * Initializes the controller by retrieving gains from parameters.
+ */
+Controller::WeightedTopologyController::WeightedTopologyController() : SwarmController() {
     // TODO: Try to use dynamic reconfigure
     this->declare_parameter<std::vector<double>>("gains");
 
@@ -18,10 +31,11 @@ WeightedTopologyController::WeightedTopologyController() : SwarmController() {
 }
 
 /**
- * @brief
- * @param neighbors
+ * @brief Convert neighbors data to matrix representation.
+ *
+ * @param neighbors The neighbors data received from the subscription.
  */
-void WeightedTopologyController::neighbors_to_matrix(
+void Controller::WeightedTopologyController::neighbors_to_matrix(
         const WeightedTopologyController::WeightedTopologyNeighbors &neighbors) {
     const auto neighbors_position{neighbors.neighbors_position};
     const auto weights{neighbors.weights};
@@ -36,10 +50,11 @@ void WeightedTopologyController::neighbors_to_matrix(
 }
 
 /**
+ * @brief Callback function for processing incoming neighbor data.
  *
- * @brief
+ * @param neighbors Pointer to the received neighbor data.
  */
-void WeightedTopologyController::neighbors_callback(const WeightedTopologyNeighbors::SharedPtr &neighbors) {
+void Controller::WeightedTopologyController::neighbors_callback(const WeightedTopologyNeighbors::SharedPtr &neighbors) {
     if (!std::empty(neighbors->neighbors_position)) {
         is_neighborhood_empty = false;
         const auto vect_neighborhood{*neighbors};
@@ -50,9 +65,9 @@ void WeightedTopologyController::neighbors_callback(const WeightedTopologyNeighb
 }
 
 /**
- * @brief
- */
-void WeightedTopologyController::timer_callback() {
+* @brief Timer callback function for periodic control computations.
+*/
+void Controller::WeightedTopologyController::timer_callback() {
     TrajectorySetpoint setpoint{};
     if (!is_neighborhood_empty) {
         publish_offboard_control_mode(CONTROL::ACCELERATION);
@@ -65,7 +80,14 @@ void WeightedTopologyController::timer_callback() {
     trajectory_setpoint_publisher_->publish(setpoint);
 }
 
-void WeightedTopologyController::compute_command(TrajectorySetpoint& setpoint) {
+
+/**
+ * @brief Compute control command based on the current neighborhood information.
+ *
+ * @param setpoint Reference to the trajectory setpoint to be updated with the computed command.
+ */
+void Controller::WeightedTopologyController::compute_command(TrajectorySetpoint& setpoint) {
+    // TODO: Check North East Down in the neighbors when subtracting dij and here when sending in the command + DO UTest in debug with launching it int he launch file
     const PoseTwist RPVVs{neighborhood.rowwise().sum()};
     // - K * (term-to-term) [x, x_dot, y, y_dot, z, z_dot] => reshape to (2,3) [[-K1*x,-K2*x_dot],[-K3*y,-K4*y_dot],[-K5*x,-K6*z_dot]]
     // Then sum the rows
@@ -75,14 +97,17 @@ void WeightedTopologyController::compute_command(TrajectorySetpoint& setpoint) {
 
 
 /**
+ * @brief Main function to run the controller.
  *
- * @param argc
- * @param argv
- * @return
+ * Initializes the ROS 2 node and starts spinning the node.
+ *
+ * @param argc Number of command-line arguments.
+ * @param argv Command-line arguments.
+ * @return int Exit status.
  */
 int main(int argc, char *argv[]) {
     rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<WeightedTopologyController>());
+    rclcpp::spin(std::make_shared<Controller::WeightedTopologyController>());
     rclcpp::shutdown();
     return 0;
 }
