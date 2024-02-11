@@ -16,6 +16,7 @@
 #include <eigen3/Eigen/Eigen>
 #include "SwarmController.hpp"
 #include <custom_msgs/msg/weighted_topology_neighbors.hpp>
+#include <limits>
 
 namespace Controller {
     class WeightedTopologyController : public SwarmController<custom_msgs::msg::WeightedTopologyNeighbors> {
@@ -65,6 +66,6 @@ namespace Controller {
         Gains gains;                 /**< Gains for control computations. */
         bool is_neighborhood_empty{true};  /**< Flag indicating whether the neighborhood is empty. */
         // TODO: Take it as a parameter
-        std::vector<float> default_pose{0.,0.,-3.};  /**< Default pose to be used if neighborhood is empty. */
+        std::vector<float> default_pose{0., 0., -5.};  /**< Default pose to be used if neighborhood is empty. */
     };
 }

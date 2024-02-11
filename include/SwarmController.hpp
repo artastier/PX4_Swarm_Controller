@@ -27,13 +27,11 @@ using namespace std::chrono_literals;
  * @brief Enum representing control modes.
  */
 enum class CONTROL{
+    // For other type of control you need to send a different message than a trajectory setpoint
+    // See https://docs.px4.io/main/en/flight_modes/offboard.html
     POSITION = 0, /**< Position control */
     VELOCITY = 1, /**< Velocity control */
     ACCELERATION = 2, /**< Acceleration control */
-    ATTITUDE = 3, /**< Attitude control */
-    BODY_RATE = 4, /**< Body rate control */
-    THRUST_TORQUE = 5, /**< Thrust torque control */
-    DIRECT_ACTUATOR = 6 /**< Direct actuator control */
 };
 
 namespace Controller {
@@ -56,7 +54,8 @@ namespace Controller {
          * @brief Constructor.
          */
         SwarmController() : rclcpp::Node("swarm_controller") {
-            const std::string name_space{this->get_namespace()};
+//            const std::string name_space{this->get_namespace()};
+            const std::string name_space{"/px4_2"};
             offboard_control_mode_publisher_ = this->create_publisher<OffboardControlMode>(
                     name_space + "/fmu/in/offboard_control_mode", 10);
             trajectory_setpoint_publisher_ = this->create_publisher<TrajectorySetpoint>(
@@ -86,18 +85,6 @@ namespace Controller {
                     break;
                 case CONTROL::ACCELERATION:
                     msg.acceleration = true;
-                    break;
-                case CONTROL::ATTITUDE:
-                    msg.attitude = true;
-                    break;
-                case CONTROL::BODY_RATE:
-                    msg.body_rate = true;
-                    break;
-                case CONTROL::THRUST_TORQUE:
-                    msg.thrust_and_torque = true;
-                    break;
-                case CONTROL::DIRECT_ACTUATOR:
-                    msg.thrust_and_torque = true;
                     break;
             }
             msg.timestamp = this->get_clock()->now().nanoseconds() / 1000;
