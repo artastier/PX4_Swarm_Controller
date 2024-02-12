@@ -54,8 +54,8 @@ namespace Controller {
          * @brief Constructor.
          */
         SwarmController() : rclcpp::Node("swarm_controller") {
-//            const std::string name_space{this->get_namespace()};
-            const std::string name_space{"/px4_2"};
+            const std::string name_space{this->get_namespace()};
+//            const std::string name_space{"/px4_2"};
             offboard_control_mode_publisher_ = this->create_publisher<OffboardControlMode>(
                     name_space + "/fmu/in/offboard_control_mode", 10);
             trajectory_setpoint_publisher_ = this->create_publisher<TrajectorySetpoint>(
