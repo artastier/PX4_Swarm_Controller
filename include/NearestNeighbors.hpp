@@ -10,6 +10,7 @@
 #include "NeighborsTraits.hpp"
 #include <px4_msgs/msg/vehicle_local_position.hpp>
 #include <chrono>
+#include <eigen3/Eigen/Eigen>
 
 using namespace std::chrono_literals;
 namespace Neighborhood {
@@ -23,6 +24,9 @@ namespace Neighborhood {
         using VehicleLocalPosition = px4_msgs::msg::VehicleLocalPosition;
 
     private:
+        using Vector2d = Eigen::Vector2d;
+        // TODO: Refactor x_init and y_init using PoseInit
+        using PoseInit = std::vector<Vector2d>;
         using PositionSubscriberSharedPtr = rclcpp::Subscription<VehicleLocalPosition>::SharedPtr;
         using NeighborsPublisherSharedPtr = typename rclcpp::Publisher<Neighbors>::SharedPtr;
 
@@ -34,9 +38,17 @@ namespace Neighborhood {
         NearestNeighbors() : Node("nearest_neighbors") {
             this->declare_parameter<int>("nb_drones");
             this->declare_parameter<double>("neighbor_distance");
+            this->declare_parameter<std::vector<double>>("x_init");
+            this->declare_parameter<std::vector<double>>("y_init");
 
             nb_drones = static_cast<std::size_t>(this->get_parameter("nb_drones").as_int());
             neighbor_distance = this->get_parameter("neighbor_distance").as_double();
+            x_init = this->get_parameter("x_init").as_double_array();
+            y_init = this->get_parameter("y_init").as_double_array();
+//            nb_drones = 3;
+//            neighbor_distance = 2.0;
+//            x_init = std::vector<double>{1.,0.,-1.};
+//            y_init = std::vector<double>{0.,1.,0.};
             // Definition of the publishers and the subscribers
             position_subscribers.reserve(nb_drones);
             neighbors_publishers.reserve(nb_drones);
@@ -81,13 +93,22 @@ namespace Neighborhood {
 
     private:
         /**
+         * @brief
+         */
+        void local_to_global(VehicleLocalPosition& localPose, const std::size_t drone_idx){
+            localPose.x = localPose.x + x_init[drone_idx];
+            localPose.y = localPose.y + y_init[drone_idx];
+        }
+        /**
          * @brief Callback function for the vehicle local position subscriber.
          * @param pose The received vehicle local position message.
          * @param drone_idx The index of the drone.
          */
-        void pose_subscriber_callback(const VehicleLocalPosition::SharedPtr &pose, const std::size_t drone_idx) {
+        void pose_subscriber_callback(const VehicleLocalPosition::SharedPtr &posePtr, const std::size_t drone_idx) {
             position_received[drone_idx] = true;
-            drones_positions[drone_idx] = *pose;
+            auto pose{*posePtr};
+            local_to_global(pose, drone_idx);
+            drones_positions[drone_idx] = pose;
         }
 
         /**
@@ -109,8 +130,8 @@ namespace Neighborhood {
                               if (!std::empty(neighborhood.neighbors_position)) {
                                   enrich_neighborhood(neighborhood);
                                   this->neighbors_publishers[drone_idx]->publish(neighborhood);
-                                  ++drone_idx;
                               }
+                              ++drone_idx;
                           });
         }
 
@@ -120,11 +141,11 @@ namespace Neighborhood {
          * @param position The position of the drone.
          * @return Neighbors object containing the information of the neighbors.
          */
-        Neighbors process_position(const std::size_t drone_idx, const VehicleLocalPosition &position) {
+        Neighbors process_position(const std::size_t &drone_idx, const VehicleLocalPosition &position) {
             Neighbors neighborhood;
             std::for_each(std::begin(this->drones_positions), std::end(this->drones_positions),
-                          [this, &neighborhood, position, drone_idx, neighbor_idx = 0u](
-                                  auto neighbor_position) mutable {
+                          [this, &neighborhood, position, &drone_idx, neighbor_idx = 0u](
+                                  const auto& neighbor_position) mutable {
                               bool is_neighbor{
                                       NearestNeighbors::is_neighbor(position, neighbor_position,
                                                                     this->neighbor_distance)};
@@ -149,7 +170,7 @@ namespace Neighborhood {
          */
         virtual void process_neighbor_position(const std::size_t drone_idx, const std::size_t neighbor_idx,
                                                const VehicleLocalPosition &position,
-                                               VehicleLocalPosition &neighbor_position,
+                                               VehicleLocalPosition neighbor_position,
                                                Neighbors &neighborhood) {
             // Default implementation proposed (in fact we are sure that the neighbors_attribute exists).
             neighborhood.neighbors_position.emplace_back(neighbor_position);
@@ -180,7 +201,7 @@ namespace Neighborhood {
         is_neighbor(const VehicleLocalPosition &lhs, const VehicleLocalPosition &rhs, const double distance) {
             const auto drone_distance{std::hypot(lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z)};
             // The search of neighbors is not really well done yet so you can have the same position in lhs and rhs.
-            return ((drone_distance <= distance) && (drone_distance != 0));
+            return ((drone_distance <= distance) && (drone_distance >= 1e-2));
         };
 
     protected:
@@ -193,5 +214,7 @@ namespace Neighborhood {
         rclcpp::TimerBase::SharedPtr timer;
         std::vector<bool> position_received;
         std::vector<VehicleLocalPosition> drones_positions;
+        std::vector<double> x_init;
+        std::vector<double> y_init;
     };
 }

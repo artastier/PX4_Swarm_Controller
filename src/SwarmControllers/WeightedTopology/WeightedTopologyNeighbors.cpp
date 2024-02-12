@@ -16,13 +16,19 @@ Neighborhood::WeightedTopologyNeighbors::WeightedTopologyNeighbors()
     this->declare_parameter<std::vector<double>>("x_formation");
     this->declare_parameter<std::vector<double>>("y_formation");
     this->declare_parameter<std::vector<double>>("z_formation");
-//  Provide x_formation, y_formation and z_formation according to the NED frame
+////  Provide x_formation, y_formation and z_formation according to the NED frame
     const auto x_formation{this->get_parameter("x_formation").as_double_array()};
     const auto y_formation{this->get_parameter("y_formation").as_double_array()};
     const auto z_formation{this->get_parameter("z_formation").as_double_array()};
 
+//    const std::vector<double> x_formation{1.,0.,-1.};
+//    const std::vector<double> y_formation{0.,1.,0.};
+//    const std::vector<double> z_formation{0.,0.,0.};
+
     vectors_to_Vector3d(x_formation, y_formation, z_formation);
 
+
+//    leaders = std::vector<bool>{true,false, false};
     leaders = this->get_parameter("leaders").as_bool_array();
     // Initialization provided in the Figure 2 of the paper. We assume they are not neighbors at the beginning.
     prcs = PRCS::Constant(nb_drones, nb_drones);
@@ -60,7 +66,7 @@ void Neighborhood::WeightedTopologyNeighbors::vectors_to_Vector3d(const std::vec
  */
 void Neighborhood::WeightedTopologyNeighbors::process_neighbor_position(const std::size_t drone_idx, const std::size_t neighbor_idx,
                                                           const VehicleLocalPosition &position,
-                                                          VehicleLocalPosition &neighbor_position,
+                                                          VehicleLocalPosition neighbor_position,
                                                           WeightedTopologyNeighborsMsg &neighborhood) {
     // Modify the neighborhood position with the inter-distance wanted between each drone
     neighbor_position.x =

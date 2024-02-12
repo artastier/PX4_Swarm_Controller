@@ -45,7 +45,7 @@ namespace Neighborhood {
          */
         void process_neighbor_position(const std::size_t drone_idx, const std::size_t neighbor_idx,
                                        const VehicleLocalPosition &position,
-                                       VehicleLocalPosition &neighbor_position,
+                                       VehicleLocalPosition neighbor_position,
                                        WeightedTopologyNeighborsMsg &neighborhood) override;
 
         /**
