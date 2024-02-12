@@ -20,10 +20,10 @@
  */
 Controller::WeightedTopologyController::WeightedTopologyController() : SwarmController() {
     // TODO: Try to use dynamic reconfigure
-//    this->declare_parameter<std::vector<double>>("gains");
-//
-//    const auto vect_gains{this->get_parameter("gains").as_double_array()};
-    const std::vector<double> vect_gains{0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
+    this->declare_parameter<std::vector<double>>("gains");
+
+    const auto vect_gains{this->get_parameter("gains").as_double_array()};
+//    const std::vector<double> vect_gains{0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
     if (std::size(vect_gains) == 6) {
         gains = Gains{vect_gains[0], vect_gains[1], vect_gains[2], vect_gains[3], vect_gains[4], vect_gains[5]};
     } else {
