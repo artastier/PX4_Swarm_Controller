@@ -1,0 +1,8 @@
+threshold: 0.1
+threshold_angle: 0.4
+# Coordinates are in the North east down frame x -> y and y -> x
+wp:
+  /px4_1:
+    # Up and down
+    - { x: 0, y: 1, z: -5, yaw: 0 }
+    - { x: 0, y: 1, z: -1, yaw: 0 }
