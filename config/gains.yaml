@@ -1,0 +1,17 @@
+gains:
+    type: std_msgs/msg/Float32MultiArray
+    Kp_z:
+        min: 0
+        max: 10
+        default: 1.5
+        to: data[0]
+    Ki_z:
+        min: 0
+        max: 10
+        default: 0
+        to: data[1]
+    Kd_z:
+        min: 0
+        max: 10
+        default: 0
+        to: data[2]
