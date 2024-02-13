@@ -19,28 +19,23 @@
  * Initializes the controller by retrieving gains from parameters.
  */
 Controller::WeightedTopologyController::WeightedTopologyController() : SwarmController() {
-    // TODO: Use slider_publisher and subscribe each node to the same slider_publisher topic
-    gains = Gains::Ones();
-    pid_az.reset();
-    gains_tuner = this->create_subscription<std_msgs::msg::Float32MultiArray>("/tuning/gains", 10,
-                                                                              [this](const std_msgs::msg::Float32MultiArray::SharedPtr tuned_gains) {
-                                                                                  const auto data{tuned_gains->data};
-                                                                                  if (data[0]!=pid_az.getKp())
-                                                                                    pid_az.setKp(data[0]);
-                                                                                  if (data[1]!=pid_az.getKi())
-                                                                                      pid_az.setKi(data[1]);
-                                                                                  if (data[2]!=pid_az.getKd())
-                                                                                      pid_az.setKd(data[2]);
-                                                                              });
-//    this->declare_parameter<std::vector<double>>("gains");
-//
-//    const auto vect_gains{this->get_parameter("gains").as_double_array()};
-//    const std::vector<double> vect_gains{0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
-//    if (std::size(vect_gains) == 6) {
-//        gains = Gains{vect_gains[0], vect_gains[1], vect_gains[2], vect_gains[3], vect_gains[4], vect_gains[5]};
-//    } else {
-//        RCLCPP_INFO(this->get_logger(), "You didn't provide the right amount of gain!");
-//    }
+    this->declare_parameter<std::vector<double>>("gains");
+
+    const auto gains{this->get_parameter("gains").as_double_array()};
+    if (std::size(gains)!=9){
+        RCLCPP_INFO(this->get_logger(),"You didn't provide Kp, Ki, Kd for each PID (9 gains to provide)");
+    }else{
+        pid_ax.setKp(gains[0]);
+        pid_ax.setKi(gains[1]);
+        pid_ax.setKd(gains[2]);
+        pid_ay.setKp(gains[3]);
+        pid_ay.setKi(gains[4]);
+        pid_ay.setKd(gains[5]);
+        pid_az.setKp(gains[6]);
+        pid_az.setKi(gains[7]);
+        pid_az.setKd(gains[8]);
+    }
+
 }
 
 /**
@@ -106,7 +101,7 @@ void Controller::WeightedTopologyController::timer_callback() {
 void Controller::WeightedTopologyController::compute_command(TrajectorySetpoint &setpoint) {
     // TODO: Check North East Down in the neighbors when subtracting dij and here when sending in the command + DO UTest in debug with launching it int he launch file
     const PoseTwist RPVVs{neighborhood.rowwise().sum()};
-    // - K * (term-to-term) [x, x_dot, y, y_dot, z, z_dot] => reshape to (2,3) [[-K1*x,-K2*x_dot],[-K3*y,-K4*y_dot],[-K5*x,-K6*z_dot]]
+    // [x, x_dot, y, y_dot, z, z_dot] => reshape to (2,3) [[-x,-x_dot],[-y,-y_dot],[-x,-z_dot]]
     // Then sum the rows
     const Eigen::RowVector3f command{-RPVVs.reshaped(2, 3).colwise().sum()};
     // In offboard mode, if you want to send a command in acceleration you need to send nan on the position and the velocity
@@ -116,14 +111,19 @@ void Controller::WeightedTopologyController::compute_command(TrajectorySetpoint 
     setpoint.velocity = {std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN(),
                          std::numeric_limits<float>::quiet_NaN()};
     const auto now_tp{this->get_clock()->now().seconds()/1000};
-    const auto dt{now_tp-command_tp};
+    auto dt{0.};
     if (command_tp!=0){
-        const auto updated_command{pid_az.update(command[2],dt)};
-        setpoint.acceleration = {command[0], command[1], updated_command};
+        dt = now_tp-command_tp;
     }else{
+        pid_ax.reset();
+        pid_ay.reset();
         pid_az.reset();
-        setpoint.acceleration = {command[0], command[1], pid_az.update(command[2],command_tp)};
+        dt = command_tp;
     }
+    const auto x_updated_command{pid_ax.update(command[0],dt)};
+    const auto y_updated_command{pid_ay.update(command[1],dt)};
+    const auto z_updated_command{pid_az.update(command[2],dt)};
+    setpoint.acceleration = {x_updated_command, y_updated_command, z_updated_command};
     command_tp = now_tp;
 }
 
