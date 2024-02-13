@@ -70,17 +70,13 @@ def generate_launch_description():
             package='px4_swarm_controller',
             executable='weighted_topology_controller',
             name='weighted_topology_controller',
-            namespace='px4_2',
-            parameters=[
-                {"gains": [0.5, 0.5, 0.5, 0.5, 0.5, 0.5]}]
+            namespace='px4_2'
         ),
         Node(
             package='px4_swarm_controller',
             executable='weighted_topology_controller',
             name='weighted_topology_controller',
-            namespace='px4_3',
-            parameters=[
-                {"gains": [0.5, 0.5, 0.5, 0.5, 0.5, 0.5]}]
+            namespace='px4_3'
         ),
         Node(
             package='px4_swarm_controller',
@@ -89,8 +85,8 @@ def generate_launch_description():
             namespace='simulation',
             # We take into account that the spawn position is in the East North Up frame
             parameters=[
-                {"nb_drones": nb_drones, "neighbor_distance": 3.0, "leaders": is_leaders, "x_formation": [1., 0., -1.],
-                 "y_formation": [0., 1., 0.], "z_formation": [0., 0., 0.],"x_init":[1., 0., -1.],"y_init":[0., 1., 0.]}]
+                {"nb_drones": nb_drones, "neighbor_distance": 3.0, "leaders": is_leaders, "x_formation": [1., 0., 0.],
+                 "y_formation": [0., 1., 3.], "z_formation": [0., 0., 0.],"x_init":[1., 0., 0.],"y_init":[0., 1., 3.]}]
         ),
         Node(
             package='slider_publisher',
@@ -99,6 +95,9 @@ def generate_launch_description():
             namespace='tuning',
             # We take into account that the spawn position is in the East North Up frame
             parameters=[
-                {"config": os.path.join(package_dir, "config", "gains.yaml"), "rate": 10}]
+                {"config": os.path.join(package_dir, "config", "gains.yaml"), "rate": 10.0}]
         )
     ])
+
+
+# Good gains Kp:2.75, Ki: 0.1 Kd:0.001
