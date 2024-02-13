@@ -73,7 +73,6 @@ def generate_launch_description():
     ys_init = []
     # Add trajectory generator if the drone is a leader and a controller otherwise
     for (namespace, initial_pose), aleader in zip(initial_poses_dict.items(), is_leaders):
-        print(namespace)
         # For all the following nodes, we will switch the x-axis and the y-axis to follow the North East Down
         # convention. In fact, to spawn the drones, we need to follow Gazebo's frame convention East North Up.
         # Therefore, we need to switch the x-axis and the y-axis if we want to respect PX4's conventions.
@@ -101,9 +100,6 @@ def generate_launch_description():
                 # Gains: [Kp_x, Ki_x, Kd_x, Kp_y, Ki_y, Kd_y, Kp_z, Ki_z, Kd_z]
                 parameters=[{"gains": gains}]
             ))
-    print("init", xs_init, ys_init)
-    print("neighborhood",neighbor_distance, x_formation, y_formation, z_formation)
-    print("controller", controller_exe, gains)
     ld.add_action(
         Node(
             package='px4_swarm_controller',
