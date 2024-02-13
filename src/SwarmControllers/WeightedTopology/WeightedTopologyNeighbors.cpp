@@ -21,10 +21,6 @@ Neighborhood::WeightedTopologyNeighbors::WeightedTopologyNeighbors()
     const auto y_formation{this->get_parameter("y_formation").as_double_array()};
     const auto z_formation{this->get_parameter("z_formation").as_double_array()};
 
-//    const std::vector<double> x_formation{1.,0.,-1.};
-//    const std::vector<double> y_formation{0.,1.,0.};
-//    const std::vector<double> z_formation{0.,0.,0.};
-
     vectors_to_Vector3d(x_formation, y_formation, z_formation);
 
 
