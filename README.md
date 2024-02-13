@@ -82,8 +82,13 @@ sudo ldconfig /usr/local/lib/
   ```shell
   mv -i px4_swarm_controller/sitl_multiple_run.sh ~/PX4-Autopilot/Tools/simulation/gazebo-classic/sitl_multiple_run.sh
   ```
-- Build the package using ```colcon```
+- Move the package containing the messages in the ```/src``` directory:
   ```shell
+  mv px4_swarm_controller/custom_msgs/ ~/ros2_ws/src/
+  ```
+- Build the package and the custom messages using ```colcon```
+  ```shell
+  colcon build --packages-select custom_msgs
   colcon build --packages-select px4_swarm_controller
   ```
 - Don't forget to source your ROS2 workspace in your terminal or in your ```bashrc``` (See example below).
