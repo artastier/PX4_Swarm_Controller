@@ -8,16 +8,6 @@
   },
   "controller": {
     "controller_exe": "weighted_topology_controller",
-    "gains": [
-      1.0,
-      0.0,
-      0.0,
-      2.5,
-      0.0,
-      0.0,
-      2.75,
-      0.1,
-      0.001
-    ]
+    "gains": [1.0, 0.0, 0.0, 2.5, 0.0, 0.0, 2.75, 0.1, 0.001]
   }
 }
