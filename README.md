@@ -3,7 +3,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 The aim of this repository is to provide a scalable multi-drone simulation for easy testing of control laws on fleets of
-UAVs. The default controller is based on a leader-follower approach taken from the paper [Distributed leader-follower formation control for
+UAVs. The default controller is based on a leader-follower approach taken from the
+paper [Distributed leader-follower formation control for
 multiple quadrotors with weighted topology (Zhicheng Hou, Isabelle Fantoni)](https://hal.science/hal-01180491/document).
 
 ## Install
@@ -96,93 +97,6 @@ Then you can run the simulation by launching ```lauch_simulation.py```:
 ros2 launch px4_swarm_controller launch_simulation.py
 ```
 
-## Configuration
-
-### Swarm configuration
-
-- **model**:
-  ```"iris" "plane" "standard_vtol" "rover" "r1_rover" "typhoon_h480"```
-- **initial_pose**: Initial coordinates in the North-East plane.
-- **is_leader**: Defines if the drone is a leader or a follower for the swarm controller.
-
-```json
-{
-  "1": {
-    "model": "iris",
-    "initial_pose": {
-      "x": 0.0,
-      "y": 1.0
-    },
-    "is_leader": true
-  },
-  "2": {
-    "model": "iris",
-    "initial_pose": {
-      "x": 1.0,
-      "y": 0.0
-    },
-    "is_leader": false
-  },
-  "3": {
-    "model": "iris",
-    "initial_pose": {
-      "x": 0.0,
-      "y": -1.0
-    },
-    "is_leader": false
-  },
-  "4": {
-    "model": "iris",
-    "initial_pose": {
-      "x": -1.0,
-      "y": 0.0
-    },
-    "is_leader": false
-  }
-}
-```
-
-### Waypoints configuration
-
-Waypoints are stored in the ```config/waypoints.yaml``` file.
-
-They should be express in the **North-East-Down** frame. The ```waypoint``` node loops over the waypoints given for one
-drone.
-
-This node is launched if and only if the ```is_leader``` variable is set to ```true``` in the **Swarm
-configuration file**. The key in the YAML file should correspond to the namespace of the drone you set
-the ```is_leader``` variable to ```true``` (See example below).
-
-You can also provide **2 thresholds**, the distance and the angle. When both the cartesian error and the angle error are
-below these thresholds, the ```waypoint``` node sends the next setpoint.
-
-```yaml
-threshold: 0.1
-threshold_angle: 0.4
-# Coordinates are in the North east down frame x -> y and y -> x
-wp:
-  /px4_1:
-    # Up and down
-    - { x: 0, y: 1, z: -5, yaw: 0 }
-    - { x: 0, y: 1, z: -1, yaw: 0 }
-  /px4_2:
-    # Up and down
-    - { x: 1, y: 0, z: -5, yaw: 0 }
-    - { x: 1, y: 0, z: -1, yaw: 0 }
-  /px4_3:
-    # Up and down
-    - { x: 0, y: -1, z: -5, yaw: 0 }
-    - { x: 0, y: -1, z: -1, yaw: 0 }
-  /px4_4:
-    # Up and down
-    - { x: -1, y: 0, z: -5, yaw: 0 }
-    - { x: -1, y: 0, z: -1, yaw: 0 }
-```
-
-### Controller configuration
-
-Coming soon
-
 ## Usage
 
 ### Arming drones
@@ -212,13 +126,187 @@ Node(
 ```
 
 ### Create your own control law
-#### Neighbors
-3 stages
-- Neighbor
-- Neighborhood
-- Neighborhood of each drone calculated
+
+#### Neighbors message
+
+You can create your custom ```Neighbors``` message for your custom command law. It should verify the traits specified in
+the header ```NeighborsTraits```.
+
+#### Neighborhood
+
+You can handle the neighborhood of your drones by deriving from the class ```NearestNeighbors```. This class is
+templated on the type of ```Neighbors``` message defined previously. You can then
+override 3 methods:
+
+- ```process_neighbor_position```
+
+Executed when a drone has been detected as a neighbor from another drone.
+
+- ```process_neighborhood```
+
+Executed when the neighborhood of one drone has been computed
+
+- ```enrich_neighborhood```
+
+Executed when all neighborhood of all the drones have been computed.
+
+If you want to see an example, check the ```WeightedTopologyNeighbors``` class.
 
 #### Controller
+
+You can build your controller based on the ```SwarmController``` interface which is templated on the
+same ```Neighbors``` message than ```NearestNeighbors```.
+
+You can override the ```neighbors_callback``` and the ```timer_callback``` which is quite explicit.
+
+If you want to see an example, check the ```WeightedTopologyNeighbors``` class.
+
+## Weighted Topology Swarm Controller
+
+### Implementation
+
+- We followed all the algorithms provided in the paper. However, the $\sigma_{n}$ operator wasn't specified but is
+  defined
+  as follows:
+
+  $$\forall (a,b) \in \mathbb{R}^{2},\sigma_b(a) = sign(a)\times min(|a|,b)$$
+- We have made a **small improvement** by adding a PID controller on the acceleration of each axis (XYZ).
+
+  Indeed, in the paper, they were using proportional gains to weight the homogeneous term at a position and the
+  homogeneous term at a velocity. The output of this weighted sum is an acceleration. Therefore, we directly applied a
+  PID
+  control on the acceleration command, and we **removed** the proportional gains.
+
+  It allows us to apply this control on the Z-axis whereas in the paper, the drones where assumed in the same plan.
+
+### Results
+
+We tuned the PID controllers only for the swarm and the trajectories provided in this repository.
+
+#### Up and down trajectory
+ADD
+#### Circular trajectory
+ADD
+## Launchfile Configuration
+
+You can change the characteristics of each node only by modifying the following configuration files.
+
+### Swarm configuration
+
+- **model**:
+  ```"iris" "plane" "standard_vtol" "rover" "r1_rover" "typhoon_h480"```
+- **initial_pose**: Initial coordinates in the North-East plane.
+- **is_leader**: Defines if the drone is a leader or a follower for the swarm controller.
+- **trajectory**: Provide the name of a YAML file defining waypoints in the ```config/Trajectorie``` directory.
+
+```json
+{
+  "swarm": {
+    "1": {
+      "model": "iris",
+      "initial_pose": {
+        "x": 0.0,
+        "y": 1.0
+      },
+      "is_leader": true
+    },
+    "2": {
+      "model": "iris",
+      "initial_pose": {
+        "x": 1.0,
+        "y": 0.0
+      },
+      "is_leader": false
+    },
+    "3": {
+      "model": "iris",
+      "initial_pose": {
+        "x": 3.0,
+        "y": 0.0
+      },
+      "is_leader": false
+    }
+  },
+  "trajectory": "waypoints_up_and_down.yaml"
+}
+```
+
+### Waypoints configuration
+
+Waypoints are stored in the ```config/waypoints.yaml``` file.
+
+They should be express in the **North-East-Down** frame. The ```waypoint``` node loops over the waypoints given for one
+drone.
+
+This node is launched if and only if the ```is_leader``` variable is set to ```true``` in the **Swarm
+configuration file**. The key in the YAML file should correspond to the namespace of the drone you set
+the ```is_leader``` variable to ```true``` (See example below).
+
+You can also provide **2 thresholds**, the distance and the angle. When both the cartesian error and the angle error are
+below these thresholds, the ```waypoint``` node sends the next setpoint.
+
+```yaml
+threshold: 0.1
+threshold_angle: 0.4
+# Coordinates are in the North east down frame x -> y and y -> x
+wp:
+  /px4_1:
+    # Up and down
+    - { x: 0, y: 1, z: -5, yaw: 0 }
+    - { x: 0, y: 1, z: -1, yaw: 0 }
+```
+
+### Neighborhood and controller
+
+- **neighbors_exe**: Name of the node executable that publish the neighborhoods of each drone.
+- **neighbor_distance**: Distance under which a drone is considered as a neighbor.
+- **x_formation**, **y_formation**, **z_formation**: Distance wanted between each follower and the leader in the North
+  East Down convention.
+- **controller_exe**: Controller node executable.
+- **gains**: Gains for the 3 acceleration PID controllers of ```WeightedTopologyController```in this order:
+  
+  $$[K_{px},K_{ix},K_{dx},K_{py},K_{iy},K_{dy},K_{pz},K_{iz},K_{dz}]$$
+
+```json
+{
+  "neighborhood": {
+    "neighbors_exe": "weighted_topology_neighbors",
+    "neighbor_distance": 3.0,
+    "x_formation": [
+      1.0,
+      0.0,
+      0.0
+    ],
+    "y_formation": [
+      0.0,
+      0.0,
+      2.0
+    ],
+    "z_formation": [
+      0.0,
+      0.0,
+      -1.0
+    ]
+  },
+  "controller": {
+    "controller_exe": "weighted_topology_controller",
+    "gains": [
+      1.0,
+      0.0,
+      0.0,
+      2.5,
+      0.0,
+      0.0,
+      2.75,
+      0.1,
+      0.001
+    ]
+  }
+}
+
+```
+
+###
 
 ### Launching the simulation
 
