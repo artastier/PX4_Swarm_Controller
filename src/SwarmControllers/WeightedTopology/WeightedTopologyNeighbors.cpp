@@ -41,9 +41,10 @@ Neighborhood::WeightedTopologyNeighbors::WeightedTopologyNeighbors()
  * @param y The y-coordinates vector.
  * @param z The z-coordinates vector.
  */
-void Neighborhood::WeightedTopologyNeighbors::vectors_to_Vector3d(const std::vector<double> &x, const std::vector<double> &y,
-                                                    const std::vector<double> &z) {
-    if ((x.size(),y.size(),z.size()) == (nb_drones,nb_drones,nb_drones)) {
+void
+Neighborhood::WeightedTopologyNeighbors::vectors_to_Vector3d(const std::vector<double> &x, const std::vector<double> &y,
+                                                             const std::vector<double> &z) {
+    if ((x.size(), y.size(), z.size()) == (nb_drones, nb_drones, nb_drones)) {
         formation.reserve(nb_drones);
         std::transform(std::begin(x), std::end(x), std::begin(formation), [&, idx = 0u](const auto aX) mutable {
             Vector3d offset{aX, y[idx], z[idx]};
@@ -64,17 +65,21 @@ void Neighborhood::WeightedTopologyNeighbors::vectors_to_Vector3d(const std::vec
  * @param neighbor_position The position of the neighbor drone.
  * @param neighborhood The neighborhood message to be updated.
  */
-void Neighborhood::WeightedTopologyNeighbors::process_neighbor_position(const std::size_t drone_idx, const std::size_t neighbor_idx,
-                                                          const VehicleLocalPosition &position,
-                                                          VehicleLocalPosition neighbor_position,
-                                                          WeightedTopologyNeighborsMsg &neighborhood) {
+void Neighborhood::WeightedTopologyNeighbors::process_neighbor_position(const std::size_t drone_idx,
+                                                                        const std::size_t neighbor_idx,
+                                                                        const VehicleLocalPosition &position,
+                                                                        VehicleLocalPosition neighbor_position,
+                                                                        WeightedTopologyNeighborsMsg &neighborhood) {
     // Modify the neighborhood position with the inter-distance wanted between each drone
     neighbor_position.x =
-            position.x - neighbor_position.x - static_cast<float>(formation[drone_idx].x() - formation[neighbor_idx].x());
+            position.x - neighbor_position.x -
+            static_cast<float>(formation[drone_idx].x() - formation[neighbor_idx].x());
     neighbor_position.y =
-            position.y - neighbor_position.y - static_cast<float>(formation[drone_idx].y() - formation[neighbor_idx].y());
+            position.y - neighbor_position.y -
+            static_cast<float>(formation[drone_idx].y() - formation[neighbor_idx].y());
     neighbor_position.z =
-            position.z - neighbor_position.z - static_cast<float>(formation[drone_idx].z() - formation[neighbor_idx].z());
+            position.z - neighbor_position.z -
+            static_cast<float>(formation[drone_idx].z() - formation[neighbor_idx].z());
     neighbor_position.vx = position.vx - neighbor_position.vx;
     neighbor_position.vy = position.vy - neighbor_position.vy;
     neighbor_position.vz = position.vz - neighbor_position.vz;
@@ -90,7 +95,7 @@ void Neighborhood::WeightedTopologyNeighbors::process_neighbor_position(const st
  * @param neighborhood The neighborhood message to be updated.
  */
 void Neighborhood::WeightedTopologyNeighbors::process_neighborhood(const std::size_t drone_idx,
-                                                     WeightedTopologyNeighborsMsg &neighborhood) {
+                                                                   WeightedTopologyNeighborsMsg &neighborhood) {
     if (!std::empty(neighborhood.neighbors_position)) {
         if (leaders[drone_idx]) {
             prcs[drone_idx] = 1;
@@ -112,15 +117,18 @@ void Neighborhood::WeightedTopologyNeighbors::enrich_neighborhood(WeightedTopolo
     const auto sum_updated_prcs_neighborhood
             {
                     std::accumulate(std::begin(neighborhood.neighbors_ids), std::end(neighborhood.neighbors_ids),
-                                    0u,
-                                    [this](const double sum, const auto id) { return sum + prcs[id]; })
+                                    0.0,
+                                    [this](const double sum, const auto id) {
+                                        return sum + 1. / static_cast<double>(prcs[id]);
+                                    })
             };
     Weights weights;
     weights.reserve(nb_drones);
     std::for_each(std::begin(neighborhood.neighbors_ids), std::end(neighborhood.neighbors_ids),
                   [this, &weights, sum_updated_prcs_neighborhood](const auto id) {
                       weights.emplace_back(
-                              static_cast<double>(prcs[id]) / static_cast<double>(sum_updated_prcs_neighborhood));
+                              (1. / static_cast<double>(prcs[id])) /
+                              static_cast<double>(sum_updated_prcs_neighborhood));
                   });
     neighborhood.set__weights(weights);
 }
