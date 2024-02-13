@@ -1,0 +1,23 @@
+{
+  "neighborhood": {
+    "neighbors_exe": "weighted_topology_neighbors",
+    "neighbor_distance": 3.0,
+    "x_formation": [1.0, 0.0, 0.0],
+    "y_formation": [0.0, 1.0, 3.0],
+    "z_formation": [0.0, 0.0, 0.0]
+  },
+  "controller": {
+    "controller_exe": "weighted_topology_controller",
+    "gains": [
+      1.0,
+      0.0,
+      0.0,
+      2.5,
+      0.0,
+      0.0,
+      2.75,
+      0.1,
+      0.001
+    ]
+  }
+}
