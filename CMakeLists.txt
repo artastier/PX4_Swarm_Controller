@@ -22,14 +22,14 @@ add_executable(arming include src/Arming.cpp)
 ament_target_dependencies(arming rclcpp px4_msgs)
 
 add_executable(waypoint include src/ChangeWaypoint.cpp)
-ament_target_dependencies(waypoint rclcpp px4_msgs std_msgs)
+ament_target_dependencies(waypoint rclcpp px4_msgs)
 target_link_libraries(waypoint ${YAML_CPP_LIBRARIES})
 
 add_executable(weighted_topology_neighbors include src/SwarmControllers/WeightedTopology/WeightedTopologyNeighbors.cpp)
 ament_target_dependencies(weighted_topology_neighbors rclcpp px4_msgs custom_msgs Eigen3)
 
 add_executable(weighted_topology_controller include src/SwarmControllers/WeightedTopology/WeightedTopologyController.cpp)
-ament_target_dependencies(weighted_topology_controller rclcpp px4_msgs custom_msgs Eigen3)
+ament_target_dependencies(weighted_topology_controller rclcpp px4_msgs std_msgs custom_msgs Eigen3)
 
 install(TARGETS
         arming waypoint weighted_topology_neighbors weighted_topology_controller

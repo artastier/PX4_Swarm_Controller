@@ -17,6 +17,8 @@
 #include "SwarmController.hpp"
 #include <custom_msgs/msg/weighted_topology_neighbors.hpp>
 #include <limits>
+#include <std_msgs/msg/float32_multi_array.hpp>
+#include "PID.hpp"
 
 namespace Controller {
     class WeightedTopologyController : public SwarmController<custom_msgs::msg::WeightedTopologyNeighbors> {
@@ -26,6 +28,7 @@ namespace Controller {
         using PoseTwist = Eigen::Vector<float, 6>;
         using Neighborhood = Eigen::Matrix<float, 6, Eigen::Dynamic>;
         using Gains = Eigen::Vector<float, 6>;
+        using PID = PID::PID<float>;
     public:
         /**
          * @brief Constructs a new Weighted Topology Controller object.
@@ -64,8 +67,13 @@ namespace Controller {
     private:
         Neighborhood neighborhood;   /**< Matrix representation of neighborhood information. */
         Gains gains;                 /**< Gains for control computations. */
+        rclcpp::Subscription<std_msgs::msg::Float32MultiArray>::SharedPtr gains_tuner;
         bool is_neighborhood_empty{true};  /**< Flag indicating whether the neighborhood is empty. */
         // TODO: Take it as a parameter
         std::vector<float> default_pose{0., 0., -5.};  /**< Default pose to be used if neighborhood is empty. */
+        //PID pid_ax;
+        //PID pid_ay;
+        PID pid_az{3.,2u};
+        float command_tp{0.0};
     };
 }
