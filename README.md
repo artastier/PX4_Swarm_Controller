@@ -7,6 +7,9 @@ UAVs. The default controller is based on a leader-follower approach taken from t
 paper [Distributed leader-follower formation control for
 multiple quadrotors with weighted topology (Zhicheng Hou, Isabelle Fantoni)](https://hal.science/hal-01180491/document).
 
+This project was carried out as part of the Research and Development professional option at Ecole Centrale de Nantes
+with my partner Martin Piernas.
+
 ## Install
 
 ### ROS2
@@ -175,7 +178,7 @@ If you want to see an example, check the ```WeightedTopologyNeighbors``` class.
   as follows:
 
   $$\forall (a,b) \in \mathbb{R}^{2},\sigma_b(a) = sign(a)\times min(|a|,b)$$
-- We have made a **small improvement** by adding a PID controller on the acceleration of each axis (XYZ).
+- We made a **small improvement** by adding a PID controller on the acceleration of each axis (XYZ).
 
   Indeed, in the paper, they were using proportional gains to weight the homogeneous term at a position and the
   homogeneous term at a velocity. The output of this weighted sum is an acceleration. Therefore, we directly applied a
@@ -189,9 +192,13 @@ If you want to see an example, check the ```WeightedTopologyNeighbors``` class.
 We tuned the PID controllers only for the swarm and the trajectories provided in this repository.
 
 #### Up and down trajectory
+
 ADD
+
 #### Circular trajectory
+
 ADD
+
 ## Launchfile Configuration
 
 You can change the characteristics of each node only by modifying the following configuration files.
@@ -269,7 +276,7 @@ wp:
   East Down convention.
 - **controller_exe**: Controller node executable.
 - **gains**: Gains for the 3 acceleration PID controllers of ```WeightedTopologyController```in this order:
-  
+
   $$[K_{px},K_{ix},K_{dx},K_{py},K_{iy},K_{dy},K_{pz},K_{iz},K_{dz}]$$
 
 ```json
@@ -320,3 +327,8 @@ You can run the simulation by launching ```lauch_simulation.py```:
 ```shell
 ros2 launch px4_swarm_controller launch_simulation.py
 ```
+
+## Improvements
+- Modify the bash script ```sitl_multiple_run.sh``` to use the latest version of gazebo.
+- Find a generic setting for the ```WeightedTopologyController``` that works for any swarm.
+- Be able to change of swarm controller, trajectory and formation online (without rebuilding the package).
