@@ -45,10 +45,6 @@ namespace Neighborhood {
             neighbor_distance = this->get_parameter("neighbor_distance").as_double();
             x_init = this->get_parameter("x_init").as_double_array();
             y_init = this->get_parameter("y_init").as_double_array();
-//            nb_drones = 3;
-//            neighbor_distance = 2.0;
-//            x_init = std::vector<double>{1.,0.,-1.};
-//            y_init = std::vector<double>{0.,1.,0.};
             // Definition of the publishers and the subscribers
             position_subscribers.reserve(nb_drones);
             neighbors_publishers.reserve(nb_drones);
@@ -93,23 +89,35 @@ namespace Neighborhood {
 
     private:
         /**
-         * @brief
-         */
+         * @brief Adjusts the local position to global coordinates based on the initial offsets.
+         *
+         * This function takes a local position and adjusts it to global coordinates using the initial offsets
+         * for the specified drone index.
+         *
+         * @param localPose The local position to be adjusted.
+         * @param drone_idx The index of the drone.
+        */
         void local_to_global(VehicleLocalPosition& localPose, const std::size_t drone_idx){
             localPose.x = localPose.x + x_init[drone_idx];
             localPose.y = localPose.y + y_init[drone_idx];
         }
+
         /**
          * @brief Callback function for the vehicle local position subscriber.
-         * @param pose The received vehicle local position message.
+         *
+         * This function is called whenever a new vehicle local position message is received.
+         * It updates the position for the specified drone index and adjusts it to global coordinates.
+         *
+         * @param posePtr The shared pointer to the received vehicle local position message.
          * @param drone_idx The index of the drone.
-         */
+        */
         void pose_subscriber_callback(const VehicleLocalPosition::SharedPtr &posePtr, const std::size_t drone_idx) {
             position_received[drone_idx] = true;
             auto pose{*posePtr};
             local_to_global(pose, drone_idx);
             drones_positions[drone_idx] = pose;
         }
+
 
         /**
          * @brief Find the nearest neighbors for each drone.
