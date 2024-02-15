@@ -193,11 +193,11 @@ We tuned the PID controllers only for the swarm and the trajectories provided in
 
 #### Up and down trajectory
 
-ADD
+https://github.com/artastier/PX4_Swarm_Controller/assets/76452245/f1ebcacc-f2e5-4039-978f-fa705736e6bd
 
 #### Circular trajectory
 
-ADD
+https://github.com/artastier/PX4_Swarm_Controller/assets/76452245/57d36f32-e843-49ee-a215-283e57f79523
 
 ## Launchfile Configuration
 
@@ -333,7 +333,6 @@ wp:
 
 ```
 
-###
 
 ### Launching the simulation
 
