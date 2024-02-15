@@ -25,5 +25,5 @@
       "is_leader": false
     }
   },
-  "trajectory": "waypoints_up_and_down.yaml"
+  "trajectory": "waypoints_circular.yaml"
 }

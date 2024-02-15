@@ -209,7 +209,7 @@ You can change the characteristics of each node only by modifying the following 
   ```"iris" "plane" "standard_vtol" "rover" "r1_rover" "typhoon_h480"```
 - **initial_pose**: Initial coordinates in the North-East plane.
 - **is_leader**: Defines if the drone is a leader or a follower for the swarm controller.
-- **trajectory**: Provide the name of a YAML file defining waypoints in the ```config/Trajectorie``` directory.
+- **trajectory**: Provide the name of a YAML file defining waypoints in the ```config/Trajectories``` directory.
 
 ```json
 {
@@ -270,51 +270,66 @@ wp:
 
 ### Neighborhood and controller
 
-- **neighbors_exe**: Name of the node executable that publish the neighborhoods of each drone.
+- **neighbors_exe**: Name of the node executable that publish the neighborhood of each drone.
 - **neighbor_distance**: Distance under which a drone is considered as a neighbor.
-- **x_formation**, **y_formation**, **z_formation**: Distance wanted between each follower and the leader in the North
-  East Down convention.
+- Neighborhood **params**: Depends on the parameters declared in your custom node.
+- Weighted neighbors **x_formation**, **y_formation**, **z_formation**: Distance wanted between each follower and the
+  leader in the North
+  East Down frame.
 - **controller_exe**: Controller node executable.
-- **gains**: Gains for the 3 acceleration PID controllers of ```WeightedTopologyController```in this order:
+- **leader_follower**:
+    - **true**: Leader-follower controller.
+    - **false**: Non leader-follower controller (the leaders and followers declared in the swarm won't be added as
+      parameters to the controller node).
+- Controller **params**: Depends on the parameters declared in your custom controller.
+- Weighted controller **gains**: Gains for the 3 acceleration PID controllers of ```WeightedTopologyController```in this
+  order:
 
   $$[K_{px},K_{ix},K_{dx},K_{py},K_{iy},K_{dy},K_{pz},K_{iz},K_{dz}]$$
 
 ```json
+
 {
   "neighborhood": {
     "neighbors_exe": "weighted_topology_neighbors",
     "neighbor_distance": 3.0,
-    "x_formation": [
-      1.0,
-      0.0,
-      0.0
-    ],
-    "y_formation": [
-      0.0,
-      0.0,
-      2.0
-    ],
-    "z_formation": [
-      0.0,
-      0.0,
-      -1.0
-    ]
+    "params": {
+      "x_formation": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "y_formation": [
+        0.0,
+        0.0,
+        2.0
+      ],
+      "z_formation": [
+        0.0,
+        0.0,
+        -1.0
+      ]
+    }
   },
   "controller": {
     "controller_exe": "weighted_topology_controller",
-    "gains": [
-      1.0,
-      0.0,
-      0.0,
-      2.5,
-      0.0,
-      0.0,
-      2.75,
-      0.1,
-      0.001
-    ]
+    "leader_follower": true,
+    "params": {
+      "gains": [
+        1.0,
+        0.0,
+        0.0,
+        2.5,
+        0.0,
+        0.0,
+        2.75,
+        0.1,
+        0.001
+      ]
+    }
   }
 }
+
 
 ```
 
@@ -329,6 +344,7 @@ ros2 launch px4_swarm_controller launch_simulation.py
 ```
 
 ## Improvements
+
 - Modify the bash script ```sitl_multiple_run.sh``` to use the latest version of gazebo.
 - Find a generic setting for the ```WeightedTopologyController``` that works for any swarm.
 - Be able to change of swarm controller, trajectory and formation online (without rebuilding the package).

@@ -52,14 +52,17 @@ def generate_launch_description():
 
     # Neighborhood and formation parameters
     neighborhood = control_config["neighborhood"]
-    neighbors_exe, neighbor_distance, x_formation, y_formation, z_formation = neighborhood["neighbors_exe"], \
-        neighborhood["neighbor_distance"], neighborhood["x_formation"], neighborhood["y_formation"], \
-        neighborhood["z_formation"]
+    neighbors_exe, neighbors_distance, neighbors_params = neighborhood["neighbors_exe"], \
+        neighborhood["neighbor_distance"], neighborhood["params"]
 
     # Control parameters
     controller_info = control_config["controller"]
-    controller_exe, gains = controller_info["controller_exe"], controller_info["gains"]
+    controller_exe, controller_params, is_leader_follower_control = controller_info["controller_exe"], controller_info[
+        "params"], controller_info["leader_follower"]
     swarm_file.close()
+
+    if is_leader_follower_control:
+        neighbors_params = {"leaders": is_leaders, **neighbors_params}
     # Launching simulation
     ld.add_action(
         Node(
@@ -98,7 +101,7 @@ def generate_launch_description():
                 name=controller_exe,
                 namespace=namespace,
                 # Gains: [Kp_x, Ki_x, Kd_x, Kp_y, Ki_y, Kd_y, Kp_z, Ki_z, Kd_z]
-                parameters=[{"gains": gains}]
+                parameters=[controller_params]
             ))
     ld.add_action(
         Node(
@@ -108,10 +111,8 @@ def generate_launch_description():
             namespace='simulation',
             # X,Y,Z formations represents the position wanted in relation to the leader
             parameters=[
-                {"nb_drones": nb_drones, "neighbor_distance": neighbor_distance, "leaders": is_leaders,
-                 "x_formation": x_formation,
-                 "y_formation": y_formation, "z_formation": z_formation, "x_init": xs_init,
-                 "y_init": ys_init}]
+                {"nb_drones": nb_drones, "neighbor_distance": neighbors_distance,
+                 "x_init": xs_init, "y_init": ys_init, **neighbors_params}]
         ))
 
     # Arming drones (each drone need to receive offboard command before arming)
