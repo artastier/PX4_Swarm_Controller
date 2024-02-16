@@ -279,8 +279,7 @@ wp:
 - **controller_exe**: Controller node executable.
 - **leader_follower**:
     - **true**: Leader-follower controller.
-    - **false**: Non leader-follower controller (the leaders and followers declared in the swarm won't be added as
-      parameters to the controller node).
+    - **false**: Non leader-follower controller (no Waypoint node will run).
 - Controller **params**: Depends on the parameters declared in your custom controller.
 - Weighted controller **gains**: Gains for the 3 acceleration PID controllers of ```WeightedTopologyController```in this
   order:
