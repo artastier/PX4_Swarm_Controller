@@ -332,7 +332,6 @@ wp:
 
 ```
 
-
 ### Launching the simulation
 
 You can run the simulation by launching ```lauch_simulation.py```:
@@ -343,6 +342,9 @@ ros2 launch px4_swarm_controller launch_simulation.py
 
 ## Improvements
 
+- Our system only works with the **iris** model, as the namespaces used in the launchfile are in the form "/px4_i",
+  which is specific to the iris model. We'll need to be able to change the namespace according to the model used in the
+  launchfile in order to support all PX4 models.
 - Modify the bash script ```sitl_multiple_run.sh``` to use the latest version of gazebo.
 - Find a generic setting for the ```WeightedTopologyController``` that works for any swarm.
 - Be able to change of swarm controller, trajectory and formation online (without rebuilding the package).
