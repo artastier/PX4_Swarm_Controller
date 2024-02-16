@@ -63,6 +63,8 @@ def generate_launch_description():
 
     if is_leader_follower_control:
         neighbors_params = {"leaders": is_leaders, **neighbors_params}
+    else:
+        is_leaders = [False for is_leader in is_leaders]
     # Launching simulation
     ld.add_action(
         Node(
